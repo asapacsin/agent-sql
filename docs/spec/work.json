@@ -15,13 +15,13 @@
         "gate spec-check: python3 scripts/check_spec.py -> exit 0 on the Phase 0 commit",
         "gate spec-tests: python3 -m unittest discover -s tests/spec -v -> OK on the Phase 0 commit",
         "contracts validated with ai-native-engineering scripts/ai_native.py validate",
-        "independent review: delegated to owner approval h-approve-spec; no reviewer model configured"
+        "independent review: owner approval h-approve-spec recorded 2026-11-23; no reviewer model configured"
       ]
     },
     {
       "id": "h-approve-spec",
       "owner": "HUMAN_DECISION",
-      "status": "HUMAN_REQUIRED",
+      "status": "PASS",
       "priority": 1,
       "action": "Owner reviews docs/spec and approves or requests changes",
       "depends_on": [
@@ -39,7 +39,10 @@
           "reject"
         ],
         "cost_of_delay": "Phase 1 cannot start"
-      }
+      },
+      "evidence": [
+        "Owner approved spec v0.1.0 as-is (commit c09c109) in the Claude Code session on 2026-11-23"
+      ]
     },
     {
       "id": "h-provide-api-key",

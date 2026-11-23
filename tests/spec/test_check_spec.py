@@ -33,7 +33,10 @@ class RepoSpecTest(unittest.TestCase):
     def test_implementation_blocked_until_spec_approved(self):
         work = {w["id"]: w for w in json.loads((ROOT / "docs/spec/work.json").read_text())["work"]}
         self.assertIn("h-approve-spec", work["p1-scaffold"]["depends_on"])
-        self.assertEqual(work["h-approve-spec"]["status"], "HUMAN_REQUIRED")
+        approval = work["h-approve-spec"]
+        self.assertIn(approval["status"], {"HUMAN_REQUIRED", "PASS"})
+        if approval["status"] == "PASS":
+            self.assertTrue(approval.get("evidence"), "approval PASS needs recorded evidence")
 
     def test_live_tasks_declare_api_capability(self):
         work = json.loads((ROOT / "docs/spec/work.json").read_text())["work"]
