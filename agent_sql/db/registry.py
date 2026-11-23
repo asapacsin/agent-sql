@@ -41,7 +41,29 @@ def open_bi(instance: str = "dev", engine: str = "sqlite", sqlite_path: Path | N
     raise ValueError(engine)
 
 
+VARIANTS = {"retailco_test_drift": "drift", "retailco_test_casing": "casing"}
+
+
+def gold_db_id(db_id: str) -> str:
+    """Gold SQL for a fault-injection variant runs on the unmodified base instance (same data)."""
+    return "retailco_test" if db_id in VARIANTS else db_id
+
+
+def open_variant(db_id: str) -> Database:
+    from bi_dataset.variants import variant_dir
+
+    desc = bi_descriptions()
+    path = variant_dir() / f"{VARIANTS[db_id]}.agent.sqlite"
+    db = Database.from_sqlite(db_id, path, restricted=desc["restricted"], descriptions=desc,
+                              snapshot_hash=sha256_file(path))
+    if VARIANTS[db_id] == "drift":  # FM2: systems see the pre-drift documentation
+        db.context_catalog = open_bi("test", "sqlite").catalog
+    return db
+
+
 def open_database(db_id: str, engine: str | None = None) -> Database:
+    if db_id in VARIANTS:
+        return open_variant(db_id)
     if db_id.startswith("retailco_"):
         return open_bi(db_id.removeprefix("retailco_"), engine or os.environ.get("AGENT_SQL_BI_ENGINE", "sqlite"))
     if db_id.startswith("bird:"):

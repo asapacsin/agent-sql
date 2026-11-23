@@ -41,8 +41,9 @@ class SchemaIndex:
     @classmethod
     def build(cls, db: Database, *, with_values: bool = True, timeout_s: float = 30.0) -> SchemaIndex:
         tables, tdocs, cdocs, ckeys = [], [], [], []
-        for name in db.catalog.names:
-            t = db.catalog.tables[name]
+        cat = db.doc_catalog
+        for name in cat.names:
+            t = cat.tables[name]
             tables.append(name)
             words = [name, t.description or ""] + [f"{c.name} {c.description or ''}" for c in t.columns]
             tdocs.append(tokenize(" ".join(words)) or ["_"])
@@ -60,7 +61,9 @@ class SchemaIndex:
         ex = Executor(self.db, statement_timeout_s=timeout_s, max_rows=MAX_DISTINCT + 1)
         q = '"' if self.db.dialect == "sqlite" else '"'
         for name in self.tables:
-            t = self.db.catalog.tables[name]
+            t = self.db.catalog.tables.get(name)
+            if t is None:
+                continue
             for c in t.columns:
                 if c.restricted or not any(k in c.type.upper() for k in ("CHAR", "TEXT", "CLOB", "STRING")):
                     continue
@@ -109,12 +112,13 @@ class SchemaIndex:
         chosen = [t for t, _ in sorted(fused.items(), key=lambda x: (-x[1], x[0]))[:top_k]]
         # 1-hop FK expansion (both directions), deduplicated, deterministic order
         expanded = list(chosen)
+        cat = self.db.doc_catalog
         for t in chosen:
-            for fk in self.db.catalog.tables[t].foreign_keys:
-                if fk.ref_table in self.db.catalog.tables and fk.ref_table not in expanded:
+            for fk in cat.tables[t].foreign_keys:
+                if fk.ref_table in cat.tables and fk.ref_table not in expanded:
                     expanded.append(fk.ref_table)
             for other in self.tables:
-                if other not in expanded and any(fk.ref_table == t for fk in self.db.catalog.tables[other].foreign_keys):
+                if other not in expanded and any(fk.ref_table == t for fk in cat.tables[other].foreign_keys):
                     expanded.append(other)
         return expanded
 
@@ -122,7 +126,7 @@ class SchemaIndex:
         vh = self.value_hits(question) if question else {}
         out = [f"Database: {self.db.db_id} (dialect: {'PostgreSQL' if self.db.dialect == 'postgres' else 'SQLite'})"]
         for name in tables:
-            out.append(render_table(self.db.catalog.tables[name]))
+            out.append(render_table(self.db.doc_catalog.tables[name]))
             for (tname, col), vals in sorted(self.samples.items()):
                 if tname == name and vals:
                     out.append(f"  sample values {col}: {', '.join(repr(v) for v in vals)}")

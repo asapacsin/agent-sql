@@ -1,0 +1,9 @@
+# E3 robustness (docs/spec/EXPERIMENTS.md section 10), fault mode fm2. Test split: requires preregistration.
+experiment_id: e3_fm2
+datasets: [{dataset: bi, split: test, task_types: [aggregate, ranking, trend], fault: fm2}]
+systems: [b0, b1, a1, a2]
+runs: 1
+bi_engine: sqlite
+llm: {mode: record}
+concurrency: 4
+max_experiment_usd: 60.0

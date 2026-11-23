@@ -25,6 +25,11 @@ class Database:
     guard: SqliteGuard | None = None
     snapshot_hash: str | None = None
     restricted: dict[str, set[str]] = field(default_factory=dict)
+    context_catalog: Catalog | None = None  # documentation shown to systems (E3 FM2: stale docs); default = catalog
+
+    @property
+    def doc_catalog(self) -> Catalog:
+        return self.context_catalog or self.catalog
 
     def policy(self) -> AccessPolicy:
         tables = {name: {c.name.lower(): c.type for c in t.columns} for name, t in self.catalog.tables.items()}

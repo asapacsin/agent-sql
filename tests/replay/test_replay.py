@@ -54,3 +54,26 @@ def test_replay_miss_fails(tmp_path, bi_dev_sqlite):
     with pytest.raises(CacheMiss):
         CachedLLM(tmp_path / "empty.jsonl", "replay").complete(
             LLMRequest("claude-opus-5-5", "s", [{"role": "user", "content": "x"}], 10, "medium"))
+
+
+def a1_script(req, i):
+    from agent_sql.llm.fake import tool_call
+
+    if len(req.messages) == 1:
+        return tool_call("execute_readonly_sql", {"purpose": "p", "sql": "SELECT COUNT(*) AS n FROM orders",
+                                                  "label": None}, f"t{i}")
+    return tool_call("submit_answer", {"status": "ANSWERED", "answer_text": "a", "final_query_id": "q1",
+                                       "claims": [], "charts": [], "metric_interpretations": [], "assumptions": [],
+                                       "limitations": [], "uncertainty": {"level": "low", "reasons": []}}, f"t{i}")
+
+
+def test_replay_reproduces_a1(tmp_path, bi_dev_sqlite):
+    cache = tmp_path / "cache.jsonl"
+    cfg = ExperimentConfig(experiment_id="replay_a1", datasets=[DatasetRef(dataset="bi", split="dev", limit=4)],
+                           systems=["a1"], runs=1, concurrency=2, llm={"mode": "record", "cache": str(cache)})
+    Runner(cfg, llm=FakeLLM(lambda req, i: a1_script(req, len(req.messages)), model="claude-opus-5-5"),
+           allow_dirty=True, out_dir=tmp_path / "rec", databases={"retailco_dev": bi_dev_sqlite}).run()
+    Runner(cfg, replay=True, allow_dirty=True, out_dir=tmp_path / "rep",
+           databases={"retailco_dev": bi_dev_sqlite}).run()
+    rec, rep = _preds(tmp_path / "rec" / "predictions.jsonl"), _preds(tmp_path / "rep" / "predictions.jsonl")
+    assert rec == rep and all(r["result"]["answer"]["status"] == "ANSWERED" for r in rec)

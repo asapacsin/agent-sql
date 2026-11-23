@@ -86,15 +86,17 @@ class RunContext:
         return resp
 
     # ---------------------------------------------------------------- SQL
-    def execute(self, sql: str, purpose: str, label: str | None = None) -> QueryRecord:
-        self.trace.emit("tool_call", tool="execute_readonly_sql", purpose=purpose, args={"sql": sql, "label": label})
+    def execute(self, sql: str, purpose: str, label: str | None = None, emit: bool = True) -> QueryRecord:
+        if emit:
+            self.trace.emit("tool_call", tool="execute_readonly_sql", purpose=purpose, args={"sql": sql, "label": label})
         rec = self.executor.run(sql, self.store, label)
         self.db_latency_s += rec.elapsed_ms / 1000
         if not rec.ok:
             self.failures += 1
-        self.trace.emit("tool_result", tool="execute_readonly_sql", status=rec.status, error_class=rec.error_class,
+        if emit:
+            self.trace.emit("tool_result", tool="execute_readonly_sql", status=rec.status, error_class=rec.error_class,
                         summary=rec.message, query_id=rec.query_id, rows=rec.row_count,
-                        truncated=bool(rec.result and rec.result.truncated), latency_s=rec.elapsed_ms / 1000)
+                            truncated=bool(rec.result and rec.result.truncated), latency_s=rec.elapsed_ms / 1000)
         return rec
 
     # ---------------------------------------------------------------- result
@@ -150,8 +152,8 @@ def enforce_answer_contract(answer: FinalAnswer, store: ResultStore) -> None:
 
 def render_full_schema(db: Database) -> str:
     lines = [f"Database: {db.db_id} (dialect: {'PostgreSQL' if db.dialect == 'postgres' else 'SQLite'})"]
-    for name in db.catalog.names:
-        t = db.catalog.tables[name]
+    for name in db.doc_catalog.names:
+        t = db.doc_catalog.tables[name]
         lines.append(render_table(t))
     return "\n".join(lines)
 

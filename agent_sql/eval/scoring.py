@@ -96,14 +96,26 @@ class Scorer:
         return self._cache[key]
 
     def _gold(self, task: EvalTask):  # noqa: ANN202
-        ex = Executor(self.dbs[task.db_id], statement_timeout_s=self.timeout_s, max_rows=self.max_rows,
+        from agent_sql.db.registry import gold_db_id, open_database
+
+        gid = gold_db_id(task.db_id)
+        if gid not in self.dbs:
+            self.dbs[gid] = open_database(gid)
+        ex = Executor(self.dbs[gid], statement_timeout_s=self.timeout_s, max_rows=self.max_rows,
                       validate=False)  # gold is trusted evaluator SQL, still on the read-only connection
-        key = (task.db_id, "GOLD:" + task.gold["sql"])
+        key = (gid, "GOLD:" + task.gold["sql"])
         if key not in self._cache:
             self._cache[key] = ex.run(task.gold["sql"], ResultStore())
         return self._cache[key]
 
     def _events(self, db_id: str) -> list[dict]:
+        from agent_sql.db.registry import gold_db_id
+
+        db_id = gold_db_id(db_id)
+        if db_id not in self.dbs:
+            from agent_sql.db.registry import open_database
+
+            self.dbs[db_id] = open_database(db_id)
         rec = self._exec(db_id, "SELECT be.event_id, be.event_type, r.region_name FROM business_events be "
                                 "LEFT JOIN regions r ON r.region_id = be.region_id")
         return [{"event_id": a, "event_type": b, "region_name": c} for a, b, c in (rec.result.rows if rec.ok else [])]

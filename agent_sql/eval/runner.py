@@ -36,6 +36,8 @@ class DatasetRef(BaseModel):
     dataset: str  # bi | bird
     split: str
     limit: int | None = None
+    task_types: list[str] | None = None  # filter (E3 uses aggregate/ranking/trend)
+    fault: str | None = None  # E3: fm1 (transient error) | fm2 (schema drift + stale docs) | fm3 (value casing)
 
 
 class LLMSettings(BaseModel):
@@ -62,9 +64,18 @@ def load_experiment(path: Path) -> ExperimentConfig:
     return ExperimentConfig(**load_yaml(path))
 
 
+FAULT_DB = {"fm2": "retailco_test_drift", "fm3": "retailco_test_casing"}
+
+
 def load_tasks(ref: DatasetRef) -> list[EvalTask]:
+    import dataclasses
+
     if ref.dataset == "bi":
         tasks = load_bi_tasks(ref.split)
+        if ref.task_types:
+            tasks = [t for t in tasks if t.task_type in ref.task_types]
+        if ref.fault in FAULT_DB:
+            tasks = [dataclasses.replace(t, db_id=FAULT_DB[ref.fault]) for t in tasks]
     elif ref.dataset == "bird":
         from agent_sql.eval.datasets.bird import load_bird_tasks
 
@@ -177,11 +188,14 @@ class Runner:
         trace_dir = self.out / "traces"
         errors: list[str] = []
 
+        fm1 = {t.task_id for ref in self.cfg.datasets if ref.fault == "fm1" for t in load_tasks(ref)}
+
         def work(item):  # noqa: ANN001, ANN202
             run_index, task, sid = item
             if state["stop"]:
                 return None
-            rt = Runtime(self.db(task.db_id), self.llm, self.model, self.limits, self.pricing, trace_dir)
+            rt = Runtime(self.db(task.db_id), self.llm, self.model, self.limits, self.pricing, trace_dir,
+                         fault_hook=transient_fault_once() if task.task_id in fm1 else None)
             system = build_system(rt, sys_cfgs[sid])
             try:
                 result = system.run(task.to_input())
@@ -222,3 +236,17 @@ def read_predictions(run_dir: Path) -> list[tuple[int, RunResult]]:
 def load_experiment_from_dir(run_dir: Path) -> ExperimentConfig:
     resolved = json.loads((Path(run_dir) / "resolved_config.json").read_text())
     return ExperimentConfig(**resolved["experiment"])
+
+
+def transient_fault_once():  # noqa: ANN201
+    """E3 FM1: the first execution of each task-run raises a transient DB error; later executions succeed."""
+    import sqlite3
+
+    state = {"fired": False}
+
+    def hook(sql: str) -> None:
+        if not state["fired"]:
+            state["fired"] = True
+            raise sqlite3.OperationalError("disk I/O error (injected transient fault)")
+
+    return hook
