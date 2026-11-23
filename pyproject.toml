@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-sql"
+version = "0.1.0"
+description = "Benchmark-driven agentic SQL analyst (B0/B1/A1/A2)"
+requires-python = ">=3.11"
+dependencies = [
+  "anthropic>=2.12,<3",
+  "sqlalchemy>=2.0,<3",
+  "psycopg[binary]>=3.1,<4",
+  "sqlglot>=30,<31",
+  "pydantic>=2.13,<3",
+  "pyyaml>=6",
+  "numpy>=2",
+  "scipy>=1.13",
+  "rank-bm25>=0.2.2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6", "import-linter>=2"]
+ui = ["streamlit>=1.40", "altair>=5"]
+
+[project.scripts]
+agent-sql = "agent_sql.eval.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["agent_sql*", "bi_dataset*"]
+
+[tool.setuptools.package-data]
+agent_sql = ["verification/*.yaml"]
+bi_dataset = ["*.sql", "events/*.json", "tasks/*.jsonl"]
+
+[tool.pytest.ini_options]
+markers = [
+  "postgres: needs a reachable PostgreSQL (AGENT_SQL_PG_ADMIN_URL)",
+  "live: calls the real LLM provider (needs ANTHROPIC_API_KEY)",
+]
+addopts = "-p no:cacheprovider"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["data", "results"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E501"]
+
+[tool.importlinter]
+root_packages = ["agent_sql"]
+
+[[tool.importlinter.contracts]]
+name = "Systems never see gold: agent_sql.systems must not import agent_sql.eval"
+type = "forbidden"
+source_modules = ["agent_sql.systems", "agent_sql.tools", "agent_sql.orchestration", "agent_sql.llm"]
+forbidden_modules = ["agent_sql.eval"]

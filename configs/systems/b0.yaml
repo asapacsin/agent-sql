@@ -1,0 +1,3 @@
+system_id: b0
+kind: b0
+prompts: {sql: b0/sql.v1.md, composer: shared/composer.v1.md}

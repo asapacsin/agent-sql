@@ -1,0 +1,36 @@
+{
+  "instance": "dev",
+  "seed": 1101,
+  "disabled_events": [],
+  "events_sha256": "6b89f8b4494483f21f18f47458db333b4d4b9e8e971fe85f25bd73a716d814d5",
+  "schema_sha256": "237f30b704dbabb929cd0294d9337b1ce70afae072fa234dc328bb01cea36bdf",
+  "generator_sha256": "92aae8e1ed9f7d32f002f7f960b59f8961b2a21d71707c9b06ad9a89f608b210",
+  "row_counts": {
+    "regions": 6,
+    "categories": 16,
+    "products": 300,
+    "product_costs": 900,
+    "customers": 5000,
+    "promotions": 25,
+    "orders": 60418,
+    "order_items": 150560,
+    "returns": 5456,
+    "transactions": 60799,
+    "business_events": 14,
+    "calendar": 731
+  },
+  "csv_sha256": {
+    "regions.csv": "84d2b87508997b4b1eda490469afe15f867be9d393e5a600e697f34dc010cde1",
+    "categories.csv": "70105957f189b655f94a8dc79e71b320156a40af2c096612787eb163d20b7fc0",
+    "products.csv": "c955f776a7033e4da768a4b3c4d16b62f177245e1681c268cc47c5125ee4e119",
+    "product_costs.csv": "392b00f7bc64e71cb21a8293fe29040143a044049e1825c2be4dff3a440c9828",
+    "customers.csv": "aab05f5892255aa17f11140ff518514dadc9821e833b9c90c323dbd670166ba0",
+    "promotions.csv": "9daeaac0b80f6152f151747e000147e33d1bb6fecf24b7df61444d96e8e65bcb",
+    "orders.csv": "2ee356ec615eda1cf42639ffb6967e41b10f971cfb0f4392783667c0467f74d5",
+    "order_items.csv": "a30651d97775feaa88f1435e77c25f5694b0c121ba706bcab78639cea4ae67ee",
+    "returns.csv": "19aa44f9909ed8532d55de2720c1567cb580e441009c6fdc0383920dc602746f",
+    "transactions.csv": "db35909aa2b87f8c22862daf4de0bb1b6a3a3243f8490f3de242dd44c233d092",
+    "business_events.csv": "fe2a1716c35112908827297a9aa9ff028271f79b1b4653046806c0ecc68e9e30",
+    "calendar.csv": "ea713af77668a81f542e4f75e06d11a8fa47507444a3329b395f15136b6d4cf3"
+  }
+}

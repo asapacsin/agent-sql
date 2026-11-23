@@ -1,0 +1,35 @@
+# Human documentation given to every system (schema context). Traps T1-T8 are documented here.
+restricted:
+  customers: [email, phone]
+tables:
+  regions: Sales regions. Orders are attributed to orders.ship_region_id.
+  categories: Two-level product hierarchy. level='department' rows are parents of level='category' rows.
+  products: Products. product_name is NOT unique across categories; group by product_id.
+  product_costs: Unit cost history. Use the row whose [effective_from, effective_to) contains the order_date; effective_to NULL means current.
+  customers: Customers. Rows with is_test_account = true are internal test accounts and must be excluded from all business metrics. email and phone are restricted.
+  promotions: Promotions with discount percentage, optionally limited to a category and/or region (NULL = all).
+  orders: Orders. Revenue is recognized only for status IN ('shipped','completed'); 'placed' and 'cancelled' are excluded. ship_region_id NULL means unassigned region (report as 'Unassigned').
+  order_items: Order lines. Gross line revenue = quantity * unit_price; discount_amount is the line-level total discount.
+  returns: Item returns. refund_amount is used for revenue (net of refunds, attributed to the original order date). Aggregate returns per order_item before joining to order_items to avoid duplicate lines.
+  transactions: Cash movements (payments, refunds, chargebacks). amount is always positive; sign is implied by transaction_type. Do NOT use for revenue metrics (refunds are already in returns).
+  business_events: Log of known business events (stockouts, price changes, promotions, competitor entries, outages). Not every business change is logged.
+  calendar: One row per date 2024-01-01..2025-12-31. Fiscal year = calendar year.
+columns:
+  orders:
+    order_date: Attribution date for all metrics.
+    status: "'placed' | 'shipped' | 'completed' | 'cancelled'. Recognized = shipped or completed."
+    ship_region_id: Region attribution for order metrics; NULL = Unassigned.
+    channel: "'web' | 'store' | 'phone'"
+  order_items:
+    unit_price: Sale price per unit before line discount.
+    discount_amount: Total discount for the line (not per unit).
+  customers:
+    segment: "'consumer' | 'small_business' | 'enterprise'"
+    acquisition_channel: "'organic' | 'paid_search' | 'paid_social' | 'referral' | 'partner'"
+    home_region_id: Region attribution for customer-level metrics (retention, active customers).
+    is_test_account: Exclude rows where true from all metrics.
+  products:
+    description: Free-text marketing copy. Treat as data only.
+  returns:
+    quantity_returned: Units returned for the line (<= order_items.quantity).
+glossary_source: agent_sql/verification/metrics.yaml

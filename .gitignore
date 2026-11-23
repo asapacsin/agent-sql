@@ -18,3 +18,6 @@ data/downloads/
 # Secrets
 .env
 .env.*
+
+# Generated BI datasets (reproducible from bi_dataset/generate.py; hashes in data/manifests/)
+data/generated/

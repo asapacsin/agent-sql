@@ -245,9 +245,9 @@ Events are configured in `bi_dataset/events/<instance>.json` and applied by the 
 
 | Event | Logged | Effect |
 | --- | --- | --- |
-| D1 | yes (stockout) | Category "Outdoor Gear" in West: order intensity × 0.35 from 2025-08-10 to 2025-09-20 → Q3 revenue decline and a September retention dip in West |
+| D1 | yes (stockout) | Category "Outdoor Gear" in West: order intensity × 0.35 from 2025-08-10 to 2025-09-20 → Aug–Sep revenue for that category/region falls to roughly a third of the counterfactual |
 | D2 | yes (price_change) | Category "Laptops": unit price × 1.12 from 2025-07-01; units × 0.85 |
-| D3 | no | Segment `small_business` acquired via `paid_social`: monthly churn hazard × 2.5 in 2025-09 to 2025-10 |
+| D3 | no | Segment `small_business` (all acquisition channels): monthly churn hazard × 4 in 2025-09 to 2025-10 → September/October retention drop concentrated in that segment |
 | D4 | yes (promotion) | Holiday promotion, all categories, 2025-11-24 to 2025-12-01: intensity × 1.8 with discount 15% |
 | D5 | yes (competitor_entry) | Southeast, department "Home": intensity × 0.8 from 2025-04-01 onward |
 

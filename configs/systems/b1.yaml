@@ -1,0 +1,4 @@
+system_id: b1
+kind: b1
+prompts: {sql: b1/sql.v1.md, composer: shared/composer.v1.md}
+b1_top_k_tables: 5

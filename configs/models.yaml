@@ -1,0 +1,6 @@
+# Pinned model for all systems in an experiment (docs/spec/BASELINES.md section 1).
+model_id: claude-opus-5-5
+effort: medium
+max_tokens_per_call: 16000
+benchmark_mode: true
+sdk_max_retries: 2

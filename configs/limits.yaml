@@ -1,0 +1,5 @@
+statement_timeout_s: 30
+task_wall_clock_s: 300
+max_result_rows_stored: 10000
+observation_max_rows: 50
+observation_max_cell_chars: 200
