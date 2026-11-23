@@ -17,6 +17,7 @@ from agent_sql.eval.datasets.bi import EvalTask
 from agent_sql.eval.failure_taxonomy import auto_failure_code
 from agent_sql.systems.contracts import FinalAnswer, RunResult
 
+BIRD_EX_MAX_ROWS = 5_000_000  # complete-result comparison for official EX semantics
 POSTHOC_CHECKS_VERSION = "v2:V1-V8 (V3,V4 N/A post hoc)"
 
 
@@ -27,6 +28,18 @@ def tables_in(sql: str, dialect: str) -> set[str]:
         return set()
     ctes = {c.alias_or_name.lower() for c in tree.find_all(exp.CTE)}
     return {t.name.lower() for t in tree.find_all(exp.Table) if t.name and t.name.lower() not in ctes}
+
+
+_DEV_VAL: set[str] | None = None
+
+
+def _dev_val_questions() -> set[str]:
+    global _DEV_VAL
+    if _DEV_VAL is None:
+        from agent_sql.eval.datasets.bi import load_bi_tasks
+
+        _DEV_VAL = {t.question.strip().lower() for split in ("dev", "val") for t in load_bi_tasks(split)}
+    return _DEV_VAL
 
 
 def _with_gold_values(spec: dict, gold) -> dict:  # noqa: ANN001
@@ -76,6 +89,7 @@ class TaskScore:
     failure_code: str | None
     set_f1: float | None = None
     retrieval_recall: float | None = None  # S03
+    overlaps_dev: bool = False  # held-out BI task whose question also appears in dev/val (review finding A12)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -91,6 +105,14 @@ class Scorer:
         key = (db_id, sql)
         if key not in self._cache:
             ex = Executor(self.dbs[db_id], statement_timeout_s=self.timeout_s, max_rows=self.max_rows)
+            self._cache[key] = ex.run(sql, ResultStore())
+        return self._cache[key]
+
+    def _exec_uncapped(self, db_id: str, sql: str, validate: bool = True):  # noqa: ANN202
+        key = (db_id, "UNCAPPED:" + str(validate) + ":" + sql)
+        if key not in self._cache:
+            ex = Executor(self.dbs[db_id], statement_timeout_s=self.timeout_s, max_rows=BIRD_EX_MAX_ROWS,
+                          validate=validate)
             self._cache[key] = ex.run(sql, ResultStore())
         return self._cache[key]
 
@@ -134,7 +156,19 @@ class Scorer:
         if not gold.ok:
             raise RuntimeError(f"gold SQL failed for {task.task_id}: {gold.message}")
         if task.dataset == "bird":
-            correct = executed and bird_execution_match(rec.result.rows, gold.result.rows)
+            # official EX compares complete result sets: re-execute both uncapped (BIRD_EX_MAX_ROWS) and never
+            # compare truncated prefixes (reviewer finding on bird-384/bird-406).
+            if executed:
+                prec = self._exec_uncapped(task.db_id, final_sql)
+                grec = self._exec_uncapped(task.db_id, task.gold["sql"], validate=False)
+                if grec is None or not grec.ok:
+                    raise RuntimeError(f"gold SQL failed uncapped for {task.task_id}")
+                if grec.result.truncated or (prec is not None and prec.ok and prec.result.truncated):
+                    raise RuntimeError(f"{task.task_id}: result exceeds BIRD_EX_MAX_ROWS; refusing a prefix comparison")
+                executed = bool(prec is not None and prec.ok)
+                correct = executed and bird_execution_match(prec.result.rows, grec.result.rows)
+            else:
+                correct = False
             success = bool(correct) and ans.status == "ANSWERED"
             detail = "EX match" if correct else "EX mismatch"
         elif task.task_type in ("aggregate", "ranking", "trend", "cohort"):
@@ -220,4 +254,6 @@ class Scorer:
                          u.cost_usd, u.uncached_cost_usd, validation_failed, checks, len(numeric),
                          len(numeric) - len(bad), abstained, silent_wrong, self_service, code, set_f1)
         score.retrieval_recall = retrieval_recall
+        score.overlaps_dev = task.dataset == "bi" and task.split in ("test", "study") and \
+            task.question.strip().lower() in _dev_val_questions()
         return score

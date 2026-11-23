@@ -61,16 +61,66 @@ def test_bird_pipeline_gold_oracle_is_not_used_by_systems(tmp_path):
         assert "SELECT" not in call.messages[0]["content"]  # the user turn is the question only
 
 
-def test_runner_refuses_modified_frozen_test_manifest(tmp_path, monkeypatch):
+@pytest.fixture
+def clean_tree(monkeypatch):
+    import agent_sql.tracing.manifest as m
+
+    monkeypatch.setattr(m, "git_state", lambda root=None: {"git_sha": "test", "dirty": False})
+
+
+def test_runner_refuses_allow_dirty_on_test(tmp_path):
+    cfg = ExperimentConfig(experiment_id="g0", datasets=[DatasetRef(dataset="bi", split="test")], systems=["b0"])
+    with pytest.raises(SystemExit, match="allow-dirty"):
+        Runner(cfg, llm=FakeLLM([]), allow_dirty=True, out_dir=tmp_path).run()
+
+
+def test_runner_refuses_modified_frozen_test_manifest(tmp_path, monkeypatch, clean_tree):
     import agent_sql.eval.runner as runner
 
     monkeypatch.setattr(runner, "manifest_hash", lambda split: "0" * 64)
     cfg = ExperimentConfig(experiment_id="guard", datasets=[DatasetRef(dataset="bi", split="test")], systems=["b0"])
     with pytest.raises(SystemExit, match="frozen"):
-        Runner(cfg, llm=FakeLLM([]), allow_dirty=True, out_dir=tmp_path).run()
+        Runner(cfg, llm=FakeLLM([]), out_dir=tmp_path).run()
 
 
-def test_runner_refuses_unpreregistered_test_run(tmp_path):
+def test_runner_refuses_unpreregistered_test_run(tmp_path, clean_tree):
     cfg = ExperimentConfig(experiment_id="guard2", datasets=[DatasetRef(dataset="bi", split="test")], systems=["b0"])
     with pytest.raises(SystemExit, match="preregistered"):
-        Runner(cfg, llm=FakeLLM([]), allow_dirty=True, out_dir=tmp_path).run()
+        Runner(cfg, llm=FakeLLM([]), out_dir=tmp_path).run()
+
+
+def test_preregistered_test_run_writes_access_log(tmp_path, monkeypatch, clean_tree):
+    import agent_sql.eval.prereg as prereg
+    import agent_sql.eval.runner as runner
+    from tests.fake_policy import policy
+
+    monkeypatch.setattr(prereg, "is_preregistered", lambda h, path=None: True)
+    log = tmp_path / "access.jsonl"
+    monkeypatch.setattr(runner, "ACCESS_LOG", log)
+    cfg = ExperimentConfig(experiment_id="acc", datasets=[DatasetRef(dataset="bi", split="test", limit=1)],
+                           systems=["b0"])
+    Runner(cfg, llm=FakeLLM(policy, model="claude-opus-5-5"), out_dir=tmp_path / "out").run()
+    entries = [json.loads(line) for line in log.read_text().splitlines()]
+    assert entries and entries[0]["experiment_id"] == "acc"
+
+
+def test_config_hash_binds_prompt_text(tmp_path, monkeypatch, bi_dev_sqlite):
+    import agent_sql.config.prompts as prompts
+    from tests.fake_policy import policy
+
+    cfg = ExperimentConfig(experiment_id="h", datasets=[DatasetRef(dataset="bi", split="dev", limit=1)],
+                           systems=["b0"])
+    Runner(cfg, llm=FakeLLM(policy, model="claude-opus-5-5"), allow_dirty=True, out_dir=tmp_path / "a",
+           databases={"retailco_dev": bi_dev_sqlite}).run()
+    original = prompts.load_prompt
+
+    def edited(rel, root=prompts.REPO_ROOT):  # noqa: ANN001, ANN202
+        p = original(rel, root)
+        return prompts.Prompt(p.path, p.text + " edited", prompts.sha256_text(p.text + " edited"))
+
+    monkeypatch.setattr(prompts, "load_prompt", edited)
+    Runner(cfg, llm=FakeLLM(policy, model="claude-opus-5-5"), allow_dirty=True, out_dir=tmp_path / "b",
+           databases={"retailco_dev": bi_dev_sqlite}).run()
+    ha = json.loads((tmp_path / "a" / "manifest.json").read_text())["config_hash"]
+    hb = json.loads((tmp_path / "b" / "manifest.json").read_text())["config_hash"]
+    assert ha != hb

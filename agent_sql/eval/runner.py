@@ -30,6 +30,8 @@ from agent_sql.systems.contracts import FinalAnswer, RunResult
 from agent_sql.systems.factory import build_system
 from agent_sql.tracing.manifest import build_manifest
 
+ACCESS_LOG = REPO_ROOT / "results" / "test_access_log.jsonl"
+
 
 class DatasetRef(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -136,8 +138,13 @@ class Runner:
         return self.databases[db_id]
 
     def _guard(self, manifest: dict) -> None:
+        held_out = any(ref.split in ("test", "study") for ref in self.cfg.datasets)
+        if held_out and self.allow_dirty:
+            raise SystemExit("--allow-dirty is never allowed for test/study splits")
         if manifest["dirty"] and not self.allow_dirty:
             raise SystemExit("refusing to run on a dirty git tree (use --allow-dirty for exploratory runs)")
+        if held_out:
+            self._check_frozen_snapshots()
         for ref in self.cfg.datasets:
             if ref.dataset == "bi" and ref.split in ("test", "study"):
                 from bi_dataset.verify_frozen import frozen_task_hash
@@ -150,16 +157,36 @@ class Runner:
             if not is_preregistered(manifest["config_hash"]):
                 raise SystemExit("test split requires a preregistered config hash (experiments/preregistration.md)")
 
+    def _check_frozen_snapshots(self) -> None:
+        """Held-out data must be byte-identical to the frozen manifests (task files checked in _guard callers)."""
+        import json as _json
+
+        from agent_sql.config.settings import sha256_file
+
+        frozen = _json.loads((REPO_ROOT / "data" / "manifests" / "frozen.json").read_text())
+        for ref in self.cfg.datasets:
+            if ref.dataset == "bird":
+                from agent_sql.eval.datasets.bird import SPLIT_FILE
+
+                if sha256_file(SPLIT_FILE) != frozen["bird_splits_sha256"]:
+                    raise SystemExit("data/splits/bird.json differs from the frozen hash; refusing to run")
+            if ref.dataset == "bi" and ref.split in ("test", "study"):
+                from agent_sql.db.registry import bi_sqlite_path
+
+                if sha256_file(bi_sqlite_path("test")) != frozen["retailco_test_agent_sqlite_sha256"]:
+                    raise SystemExit("RetailCo-test database differs from the frozen snapshot; refusing to run")
+
     def run(self) -> RunOutcome:
         tasks = [t for ref in self.cfg.datasets for t in load_tasks(ref)]
         sys_cfgs = {sid: load_system(sid) for sid in self.cfg.systems}
-        resolved = {"experiment": self.cfg.model_dump(), "systems": {k: v.model_dump() for k, v in sys_cfgs.items()},
-                    "model": self.model.model_dump(), "limits": self.limits.model_dump(),
-                    "datasets": dataset_hashes(self.cfg)}
-        chash = config_hash(resolved)
         from agent_sql.systems.base import load_prompts
 
         prompts = {f"{sid}:{role}": p.sha256 for sid, c in sys_cfgs.items() for role, p in load_prompts(c.prompts).items()}
+        # the preregistered hash binds configs, prompt TEXT and dataset manifests (reviewer finding)
+        resolved = {"experiment": self.cfg.model_dump(), "systems": {k: v.model_dump() for k, v in sys_cfgs.items()},
+                    "model": self.model.model_dump(), "limits": self.limits.model_dump(),
+                    "datasets": dataset_hashes(self.cfg), "prompt_sha256": prompts}
+        chash = config_hash(resolved)
         manifest = build_manifest(experiment_id=self.cfg.experiment_id, config_hash=chash, prompts=prompts,
                                   datasets=resolved["datasets"], model_id=self.model.model_id,
                                   pricing_version=self.pricing.version, seed=20261123,
@@ -169,7 +196,8 @@ class Runner:
         self.out.mkdir(parents=True, exist_ok=True)
         (self.out / "resolved_config.json").write_text(json.dumps(resolved, indent=2, default=str) + "\n")
         if any(ref.split == "test" for ref in self.cfg.datasets):
-            with open(REPO_ROOT / "results" / "test_access_log.jsonl", "a", encoding="utf-8") as f:
+            ACCESS_LOG.parent.mkdir(parents=True, exist_ok=True)
+            with open(ACCESS_LOG, "a", encoding="utf-8") as f:
                 f.write(json.dumps({"experiment_id": self.cfg.experiment_id, "config_hash": chash,
                                     "at": datetime.now(UTC).isoformat()}) + "\n")
         pred_path = self.out / "predictions.jsonl"

@@ -127,6 +127,7 @@ def summarize(scores: list[dict]) -> dict:
             "S03_retrieval_recall": statistics.fmean(rr) if (rr := [s["retrieval_recall"] for s in items
                                                                    if s.get("retrieval_recall") is not None])
             else float("nan"),
+            "M03_non_overlap_subset": _rate([s["success"] for s in items if not s.get("overlaps_dev")]),
             "failure_codes": dict(Counter(s["failure_code"] for s in items if s["failure_code"])),
         }
     return rows
@@ -174,6 +175,9 @@ def render(scores: list[dict], manifest: dict | None = None) -> tuple[str, list[
                      f"{_fmt_rate(r['M02_exec_accuracy'])} | {_fmt_rate(r['M03_task_success'])} | "
                      f"{_fmt_rate(r['M05_tables_exact'])} | {_fmt_rate(r['M11_validation_failure'])} | "
                      f"{_fmt_rate(r['S05_silent_wrong'])} |")
+    if any(s.get("overlaps_dev") for s in scores):
+        lines += ["", "M03 excluding held-out BI tasks whose question also appears in dev/val (CHANGELOG A12):", ""]
+        lines += [f"- {r['system']} / {r['dataset']}: {_fmt_rate(r['M03_non_overlap_subset'])}" for r in rows.values()]
     lines += ["", "## Cost, latency, tokens", "",
               "| system | dataset | tool calls | LLM calls | p50 s | p90 s | input tok | output tok | cost/task $ | cost/success $ |",
               "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"]

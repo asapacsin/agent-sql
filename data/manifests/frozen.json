@@ -1,0 +1,8 @@
+{
+  "frozen_at_phase": 2,
+  "note": "Held-out artifacts; runner refuses test/study runs on mismatch",
+  "bird_splits_sha256": "e295431c537f950f859fb14a6972da1936874f6b40544adbcafa1add87204457",
+  "retailco_test_agent_sqlite_sha256": "47fd3b5fa92ff4fe485c520d9059505c57a58465f7dcce02525b281aa8f2ce4e",
+  "bi_test_tasks_sha256": "ce18594d391b1cd6ef14f3129c164882658eb3ff2b60e1ed98497278f51eafef",
+  "bi_study_tasks_sha256": "13fdd99a99062374bc052d4d0b36025cdcf28e231ac3b32572eaf82cc60b45cd"
+}

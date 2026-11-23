@@ -811,6 +811,28 @@
         ],
         "cost_of_rejecting_A2": "dev instance regenerated; D3 diagnostic tasks may become unanswerable"
       }
+    },
+    {
+      "id": "h-decide-test-overlap",
+      "owner": "HUMAN_DECISION",
+      "status": "HUMAN_REQUIRED",
+      "priority": 15,
+      "action": "Decide whether to keep or re-author the 7 BI test tasks that duplicate dev/val questions (CHANGELOG A12)",
+      "depends_on": [
+        "p2-bi-test-freeze"
+      ],
+      "phase": 2,
+      "automation_blocker": "Changing frozen held-out data is an owner decision",
+      "procedure": "Read CHANGELOG A12; choose keep (report non-overlap subset) or re-author (new freeze, recorded)",
+      "pass_criteria": "Decision recorded; if re-authored, new frozen hashes committed before any test run",
+      "expected_return": "keep / re-author",
+      "quantified": {
+        "options": [
+          "keep 50 tasks; headline + non-overlap subset (43 tasks)",
+          "re-author 7 tasks and re-freeze"
+        ],
+        "effect": "non-overlap subset n=43 lowers BI power slightly"
+      }
     }
   ]
 }

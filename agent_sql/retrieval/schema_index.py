@@ -110,6 +110,9 @@ class SchemaIndex:
             score += 0.02 * len(vhits.get(t, []))
             fused[t] = score
         chosen = [t for t, _ in sorted(fused.items(), key=lambda x: (-x[1], x[0]))[:top_k]]
+        for t in sorted(vhits):  # spec: every value hit adds its table
+            if t not in chosen:
+                chosen.append(t)
         # 1-hop FK expansion (both directions), deduplicated, deterministic order
         expanded = list(chosen)
         cat = self.db.doc_catalog

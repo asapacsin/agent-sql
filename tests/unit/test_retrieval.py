@@ -17,6 +17,24 @@ def test_index_build_reads_no_tasks(monkeypatch, bi_dev_sqlite):
     def boom(*a, **k):  # noqa: ANN002, ANN003
         raise AssertionError("retrieval index must not read benchmark tasks")
 
+    import builtins
+    import pathlib
+
+    real_open, real_read = builtins.open, pathlib.Path.read_text
+    forbidden = ("bi_dataset/tasks", "dev.json", "data/splits")
+
+    def guarded_open(file, *a, **k):  # noqa: ANN001, ANN002, ANN003, ANN202
+        if any(f in str(file) for f in forbidden):
+            raise AssertionError(f"retrieval index read {file}")
+        return real_open(file, *a, **k)
+
+    def guarded_read(self, *a, **k):  # noqa: ANN001, ANN002, ANN003, ANN202
+        if any(f in str(self) for f in forbidden):
+            raise AssertionError(f"retrieval index read {self}")
+        return real_read(self, *a, **k)
+
+    monkeypatch.setattr(builtins, "open", guarded_open)
+    monkeypatch.setattr(pathlib.Path, "read_text", guarded_read)
     monkeypatch.setattr(bi, "load_bi_tasks", boom)
     monkeypatch.setattr(bird, "dev_records", boom)
     monkeypatch.setattr(bird, "load_bird_tasks", boom)

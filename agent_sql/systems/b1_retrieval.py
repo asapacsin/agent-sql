@@ -14,11 +14,11 @@ from agent_sql.systems.base import ModelMismatch, RunContext, task_context
 from agent_sql.systems.composer import compose
 from agent_sql.systems.contracts import FinalAnswer, RunResult, TaskInput
 
-_INDEXES: dict[int, SchemaIndex] = {}
+_INDEXES: dict[tuple, SchemaIndex] = {}
 
 
 def schema_index(db: Database) -> SchemaIndex:
-    key = id(db)
+    key = (db.db_id, db.snapshot_hash, id(db.doc_catalog))
     if key not in _INDEXES:
         _INDEXES[key] = SchemaIndex.build(db)
     return _INDEXES[key]
