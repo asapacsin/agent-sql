@@ -1,0 +1,196 @@
+{
+  "schema_version": 1,
+  "task_id": "phase-2",
+  "goal": "BIRD integration with frozen database-disjoint splits, official-parity scoring, B1 schema retrieval, and frozen BI val/test/study tasks",
+  "acceptance": "BIRD manifest verified; splits frozen and db-disjoint; comparator parity with the official BIRD script is 100%; retrieval deterministic and leakage-tested; B1 runs end-to-end; BI test instance and tasks frozen with hashes before any Phase 3 commit",
+  "boundaries": [
+    "Follow AGENTS.md; deterministic code enforces safety, budgets, and answer contracts",
+    "Never weaken, skip, or delete a test or gate to obtain PASS",
+    "No secrets in code, configs, traces, reports, or commits",
+    "Never claim performance results from dev/val runs, FakeLLM, or replay as experimental results",
+    "Test artifacts may be written once and frozen in this phase; never modified afterwards"
+  ],
+  "model_policy": {
+    "executor_default": "low-cost capable coding model",
+    "independent_reviewer": "stronger independent model or human reviewer, read-only",
+    "escalate_on": [
+      "architecture conflict",
+      "two failed fixes",
+      "uncertain root cause",
+      "spec contradiction"
+    ]
+  },
+  "budgets": {
+    "max_attempts": 3,
+    "max_total_seconds": 7200
+  },
+  "approved_paths": [
+    "agent_sql/**",
+    "tests/**",
+    "configs/**",
+    "prompts/**",
+    "scripts/**",
+    "pyproject.toml",
+    "docker-compose.yml",
+    "docs/spec/work.json",
+    "reports/**",
+    "bi_dataset/**",
+    "data/manifests/**",
+    "data/splits/**",
+    ".gitignore"
+  ],
+  "forbidden_paths": [
+    "AGENTS.md",
+    ".github/workflows/**",
+    "docs/spec/contracts/**",
+    "docs/spec/requirements/**"
+  ],
+  "gates": [
+    {
+      "id": "spec-check",
+      "level": "static",
+      "command": [
+        "python3",
+        "scripts/check_spec.py"
+      ],
+      "timeout_seconds": 60,
+      "required": true
+    },
+    {
+      "id": "lint",
+      "level": "static",
+      "command": [
+        "ruff",
+        "check",
+        "."
+      ],
+      "timeout_seconds": 120,
+      "required": true
+    },
+    {
+      "id": "import-boundaries",
+      "level": "static",
+      "command": [
+        "lint-imports"
+      ],
+      "timeout_seconds": 120,
+      "required": true
+    },
+    {
+      "id": "unit-tests",
+      "level": "unit",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/unit"
+      ],
+      "timeout_seconds": 600,
+      "required": true
+    },
+    {
+      "id": "safety-corpus",
+      "level": "unit",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/safety_corpus"
+      ],
+      "timeout_seconds": 300,
+      "required": true
+    },
+    {
+      "id": "integration-sqlite",
+      "level": "integration",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration",
+        "-m",
+        "not postgres and not live"
+      ],
+      "timeout_seconds": 900,
+      "required": true
+    },
+    {
+      "id": "integration-postgres",
+      "level": "integration",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration",
+        "-m",
+        "postgres and not live"
+      ],
+      "timeout_seconds": 900,
+      "required": true
+    },
+    {
+      "id": "bird-manifest",
+      "level": "integration",
+      "command": [
+        "python3",
+        "scripts/verify_bird_manifest.py"
+      ],
+      "timeout_seconds": 600,
+      "required": true
+    },
+    {
+      "id": "bird-splits-frozen",
+      "level": "static",
+      "command": [
+        "python3",
+        "scripts/make_bird_splits.py",
+        "--verify-frozen"
+      ],
+      "timeout_seconds": 300,
+      "required": true
+    },
+    {
+      "id": "bird-parity",
+      "level": "integration",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration/test_bird_parity.py"
+      ],
+      "timeout_seconds": 1800,
+      "required": true
+    },
+    {
+      "id": "bi-test-frozen",
+      "level": "static",
+      "command": [
+        "python3",
+        "-m",
+        "bi_dataset.verify_frozen",
+        "--instance",
+        "test"
+      ],
+      "timeout_seconds": 300,
+      "required": true
+    },
+    {
+      "id": "replay-tests",
+      "level": "e2e",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/replay"
+      ],
+      "timeout_seconds": 900,
+      "required": true
+    }
+  ]
+}

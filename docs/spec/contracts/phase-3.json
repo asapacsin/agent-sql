@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "task_id": "phase-3",
+  "goal": "Tool registry, bounded A1 state machine with execution feedback and repair, and fault-injection suite",
+  "acceptance": "A1 terminates within all budgets in >= 1000 random scripted sequences; no ANSWERED status without a successful final query; all tools tested on SQLite and PostgreSQL; ablation flags for A1 isolate their behavior",
+  "boundaries": [
+    "Follow AGENTS.md; deterministic code enforces safety, budgets, and answer contracts",
+    "Never weaken, skip, or delete a test or gate to obtain PASS",
+    "No secrets in code, configs, traces, reports, or commits",
+    "Never claim performance results from dev/val runs, FakeLLM, or replay as experimental results",
+    "Do not open or edit frozen test artifacts during this phase"
+  ],
+  "model_policy": {
+    "executor_default": "low-cost capable coding model",
+    "independent_reviewer": "stronger independent model or human reviewer, read-only",
+    "escalate_on": [
+      "architecture conflict",
+      "two failed fixes",
+      "uncertain root cause",
+      "spec contradiction"
+    ]
+  },
+  "budgets": {
+    "max_attempts": 3,
+    "max_total_seconds": 7200
+  },
+  "approved_paths": [
+    "agent_sql/**",
+    "tests/**",
+    "configs/**",
+    "prompts/**",
+    "scripts/**",
+    "pyproject.toml",
+    "docker-compose.yml",
+    "docs/spec/work.json",
+    "reports/**",
+    "bi_dataset/variants/**"
+  ],
+  "forbidden_paths": [
+    "AGENTS.md",
+    ".github/workflows/**",
+    "docs/spec/contracts/**",
+    "docs/spec/requirements/**",
+    "data/splits/bird.json",
+    "bi_dataset/tasks/test.jsonl",
+    "bi_dataset/events/test.json",
+    "data/manifests/bi_test.json"
+  ],
+  "gates": [
+    {
+      "id": "spec-check",
+      "level": "static",
+      "command": [
+        "python3",
+        "scripts/check_spec.py"
+      ],
+      "timeout_seconds": 60,
+      "required": true
+    },
+    {
+      "id": "lint",
+      "level": "static",
+      "command": [
+        "ruff",
+        "check",
+        "."
+      ],
+      "timeout_seconds": 120,
+      "required": true
+    },
+    {
+      "id": "import-boundaries",
+      "level": "static",
+      "command": [
+        "lint-imports"
+      ],
+      "timeout_seconds": 120,
+      "required": true
+    },
+    {
+      "id": "unit-tests",
+      "level": "unit",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/unit"
+      ],
+      "timeout_seconds": 600,
+      "required": true
+    },
+    {
+      "id": "safety-corpus",
+      "level": "unit",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/safety_corpus"
+      ],
+      "timeout_seconds": 300,
+      "required": true
+    },
+    {
+      "id": "integration-sqlite",
+      "level": "integration",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration",
+        "-m",
+        "not postgres and not live"
+      ],
+      "timeout_seconds": 900,
+      "required": true
+    },
+    {
+      "id": "integration-postgres",
+      "level": "integration",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration",
+        "-m",
+        "postgres and not live"
+      ],
+      "timeout_seconds": 900,
+      "required": true
+    },
+    {
+      "id": "state-machine-properties",
+      "level": "unit",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/unit/test_a1_properties.py"
+      ],
+      "timeout_seconds": 1200,
+      "required": true
+    },
+    {
+      "id": "replay-tests",
+      "level": "e2e",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/replay"
+      ],
+      "timeout_seconds": 900,
+      "required": true
+    }
+  ]
+}

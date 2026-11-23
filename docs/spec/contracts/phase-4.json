@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "task_id": "phase-4",
+  "goal": "A2 planning, multi-step analysis, deterministic verification checks V1-V8, grounding, and all ablation flags including B1-SC",
+  "acceptance": "Each V-check catches its crafted negative fixture and passes its positive fixture; A2 state machine property tests pass; every ablation config runs end-to-end with FakeLLM; post-hoc V-checks run for all systems",
+  "boundaries": [
+    "Follow AGENTS.md; deterministic code enforces safety, budgets, and answer contracts",
+    "Never weaken, skip, or delete a test or gate to obtain PASS",
+    "No secrets in code, configs, traces, reports, or commits",
+    "Never claim performance results from dev/val runs, FakeLLM, or replay as experimental results",
+    "Verifier SQL templates are derived from DATA_MODEL definitions on the dev instance, never from gold SQL"
+  ],
+  "model_policy": {
+    "executor_default": "low-cost capable coding model",
+    "independent_reviewer": "stronger independent model or human reviewer, read-only",
+    "escalate_on": [
+      "architecture conflict",
+      "two failed fixes",
+      "uncertain root cause",
+      "spec contradiction"
+    ]
+  },
+  "budgets": {
+    "max_attempts": 3,
+    "max_total_seconds": 7200
+  },
+  "approved_paths": [
+    "agent_sql/**",
+    "tests/**",
+    "configs/**",
+    "prompts/**",
+    "scripts/**",
+    "pyproject.toml",
+    "docker-compose.yml",
+    "docs/spec/work.json",
+    "reports/**"
+  ],
+  "forbidden_paths": [
+    "AGENTS.md",
+    ".github/workflows/**",
+    "docs/spec/contracts/**",
+    "docs/spec/requirements/**",
+    "data/splits/bird.json",
+    "bi_dataset/tasks/test.jsonl",
+    "bi_dataset/events/test.json",
+    "data/manifests/bi_test.json"
+  ],
+  "gates": [
+    {
+      "id": "spec-check",
+      "level": "static",
+      "command": [
+        "python3",
+        "scripts/check_spec.py"
+      ],
+      "timeout_seconds": 60,
+      "required": true
+    },
+    {
+      "id": "lint",
+      "level": "static",
+      "command": [
+        "ruff",
+        "check",
+        "."
+      ],
+      "timeout_seconds": 120,
+      "required": true
+    },
+    {
+      "id": "import-boundaries",
+      "level": "static",
+      "command": [
+        "lint-imports"
+      ],
+      "timeout_seconds": 120,
+      "required": true
+    },
+    {
+      "id": "unit-tests",
+      "level": "unit",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/unit"
+      ],
+      "timeout_seconds": 600,
+      "required": true
+    },
+    {
+      "id": "safety-corpus",
+      "level": "unit",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/safety_corpus"
+      ],
+      "timeout_seconds": 300,
+      "required": true
+    },
+    {
+      "id": "integration-sqlite",
+      "level": "integration",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration",
+        "-m",
+        "not postgres and not live"
+      ],
+      "timeout_seconds": 900,
+      "required": true
+    },
+    {
+      "id": "integration-postgres",
+      "level": "integration",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration",
+        "-m",
+        "postgres and not live"
+      ],
+      "timeout_seconds": 900,
+      "required": true
+    },
+    {
+      "id": "verification-fixtures",
+      "level": "unit",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/unit/verification"
+      ],
+      "timeout_seconds": 900,
+      "required": true
+    },
+    {
+      "id": "state-machine-properties",
+      "level": "unit",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/unit/test_a2_properties.py"
+      ],
+      "timeout_seconds": 1200,
+      "required": true
+    },
+    {
+      "id": "ablation-configs",
+      "level": "integration",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration/test_ablation_configs.py"
+      ],
+      "timeout_seconds": 1800,
+      "required": true
+    },
+    {
+      "id": "replay-tests",
+      "level": "e2e",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/replay"
+      ],
+      "timeout_seconds": 900,
+      "required": true
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "task_id": "phase-5",
+  "goal": "Minimal Streamlit BI assistant with Ask, Compare (B0 vs A2), and Trace pages",
+  "acceptance": "AppTest smoke tests render answer, tables, chart, SQL, execution history, action trace, validation, warnings, and comparison metrics using FakeLLM; no private reasoning is displayed",
+  "boundaries": [
+    "Follow AGENTS.md; deterministic code enforces safety, budgets, and answer contracts",
+    "Never weaken, skip, or delete a test or gate to obtain PASS",
+    "No secrets in code, configs, traces, reports, or commits",
+    "Never claim performance results from dev/val runs, FakeLLM, or replay as experimental results",
+    "The UI contains no business logic; it renders RunResult"
+  ],
+  "model_policy": {
+    "executor_default": "low-cost capable coding model",
+    "independent_reviewer": "stronger independent model or human reviewer, read-only",
+    "escalate_on": [
+      "architecture conflict",
+      "two failed fixes",
+      "uncertain root cause",
+      "spec contradiction"
+    ]
+  },
+  "budgets": {
+    "max_attempts": 3,
+    "max_total_seconds": 7200
+  },
+  "approved_paths": [
+    "agent_sql/**",
+    "tests/**",
+    "configs/**",
+    "prompts/**",
+    "scripts/**",
+    "pyproject.toml",
+    "docker-compose.yml",
+    "docs/spec/work.json",
+    "reports/**"
+  ],
+  "forbidden_paths": [
+    "AGENTS.md",
+    ".github/workflows/**",
+    "docs/spec/contracts/**",
+    "docs/spec/requirements/**",
+    "data/splits/bird.json",
+    "bi_dataset/tasks/test.jsonl",
+    "bi_dataset/events/test.json",
+    "data/manifests/bi_test.json"
+  ],
+  "gates": [
+    {
+      "id": "spec-check",
+      "level": "static",
+      "command": [
+        "python3",
+        "scripts/check_spec.py"
+      ],
+      "timeout_seconds": 60,
+      "required": true
+    },
+    {
+      "id": "lint",
+      "level": "static",
+      "command": [
+        "ruff",
+        "check",
+        "."
+      ],
+      "timeout_seconds": 120,
+      "required": true
+    },
+    {
+      "id": "import-boundaries",
+      "level": "static",
+      "command": [
+        "lint-imports"
+      ],
+      "timeout_seconds": 120,
+      "required": true
+    },
+    {
+      "id": "unit-tests",
+      "level": "unit",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/unit"
+      ],
+      "timeout_seconds": 600,
+      "required": true
+    },
+    {
+      "id": "ui-apptest",
+      "level": "e2e",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/ui"
+      ],
+      "timeout_seconds": 900,
+      "required": true
+    }
+  ]
+}

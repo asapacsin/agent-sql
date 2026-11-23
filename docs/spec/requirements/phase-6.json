@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "contract": "contracts/phase-6.json",
+  "requirements": [
+    {
+      "id": "preregistration",
+      "min_level": "static",
+      "gate_ids": [
+        "preregistration-locked"
+      ],
+      "terminal_required": false
+    },
+    {
+      "id": "reproducible-reports",
+      "min_level": "e2e",
+      "gate_ids": [
+        "reports-reproducible"
+      ],
+      "terminal_required": false
+    }
+  ]
+}

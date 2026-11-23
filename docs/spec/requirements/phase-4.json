@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "contract": "contracts/phase-4.json",
+  "requirements": [
+    {
+      "id": "FR-07-grounding",
+      "min_level": "unit",
+      "gate_ids": [
+        "verification-fixtures"
+      ],
+      "terminal_required": false
+    },
+    {
+      "id": "FR-05-bounded-agent",
+      "min_level": "unit",
+      "gate_ids": [
+        "state-machine-properties"
+      ],
+      "terminal_required": false
+    },
+    {
+      "id": "ablations-runnable",
+      "min_level": "integration",
+      "gate_ids": [
+        "ablation-configs"
+      ],
+      "terminal_required": false
+    },
+    {
+      "id": "FR-02-a2-interface",
+      "min_level": "e2e",
+      "gate_ids": [
+        "replay-tests"
+      ],
+      "terminal_required": false
+    }
+  ]
+}

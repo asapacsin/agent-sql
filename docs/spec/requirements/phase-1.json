@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "contract": "contracts/phase-1.json",
+  "requirements": [
+    {
+      "id": "FR-02-b0-interface",
+      "min_level": "integration",
+      "gate_ids": [
+        "integration-sqlite",
+        "replay-tests"
+      ],
+      "terminal_required": false
+    },
+    {
+      "id": "FR-03-sql-safety",
+      "min_level": "unit",
+      "gate_ids": [
+        "safety-corpus"
+      ],
+      "terminal_required": false
+    },
+    {
+      "id": "FR-04-readonly-execution",
+      "min_level": "integration",
+      "gate_ids": [
+        "integration-sqlite",
+        "integration-postgres"
+      ],
+      "terminal_required": false
+    },
+    {
+      "id": "FR-06-no-fabrication",
+      "min_level": "unit",
+      "gate_ids": [
+        "unit-tests"
+      ],
+      "terminal_required": false
+    },
+    {
+      "id": "FR-08-tracing",
+      "min_level": "unit",
+      "gate_ids": [
+        "unit-tests"
+      ],
+      "terminal_required": false
+    },
+    {
+      "id": "FR-09-reproducible-config",
+      "min_level": "unit",
+      "gate_ids": [
+        "unit-tests",
+        "spec-check"
+      ],
+      "terminal_required": false
+    },
+    {
+      "id": "FR-10-eval-harness",
+      "min_level": "unit",
+      "gate_ids": [
+        "unit-tests"
+      ],
+      "terminal_required": false
+    },
+    {
+      "id": "FR-11-record-replay",
+      "min_level": "e2e",
+      "gate_ids": [
+        "replay-tests"
+      ],
+      "terminal_required": false
+    },
+    {
+      "id": "bi-dataset-determinism",
+      "min_level": "integration",
+      "gate_ids": [
+        "bi-generator-determinism"
+      ],
+      "terminal_required": false
+    },
+    {
+      "id": "live-b0-smoke",
+      "min_level": "e2e",
+      "gate_ids": [
+        "live-smoke-b0"
+      ],
+      "terminal_required": false
+    }
+  ]
+}

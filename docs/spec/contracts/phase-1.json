@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "task_id": "phase-1",
+  "goal": "Repository scaffold, read-only database layer, SQL safety validator, RetailCo-dev dataset, B0 baseline, and evaluation harness",
+  "acceptance": "B0 produces valid RunResults and traces on all 20 BI-dev tasks; harness computes M01-M12 from raw outputs; safety corpus fully passes; read-only enforcement proven on SQLite and PostgreSQL; configs equal docs/spec/parameters.json",
+  "boundaries": [
+    "Follow AGENTS.md; deterministic code enforces safety, budgets, and answer contracts",
+    "Never weaken, skip, or delete a test or gate to obtain PASS",
+    "No secrets in code, configs, traces, reports, or commits",
+    "Never claim performance results from dev/val runs, FakeLLM, or replay as experimental results",
+    "Live gate requires ANTHROPIC credentials from the environment; without them it is BLOCKED, not PASS"
+  ],
+  "model_policy": {
+    "executor_default": "low-cost capable coding model",
+    "independent_reviewer": "stronger independent model or human reviewer, read-only",
+    "escalate_on": [
+      "architecture conflict",
+      "two failed fixes",
+      "uncertain root cause",
+      "spec contradiction"
+    ]
+  },
+  "budgets": {
+    "max_attempts": 3,
+    "max_total_seconds": 7200
+  },
+  "approved_paths": [
+    "agent_sql/**",
+    "tests/**",
+    "configs/**",
+    "prompts/**",
+    "scripts/**",
+    "pyproject.toml",
+    "docker-compose.yml",
+    "docs/spec/work.json",
+    "reports/**",
+    "bi_dataset/**",
+    "data/manifests/bi_dev.json",
+    ".gitignore"
+  ],
+  "forbidden_paths": [
+    "AGENTS.md",
+    ".github/workflows/**",
+    "docs/spec/contracts/**",
+    "docs/spec/requirements/**",
+    "data/splits/bird.json",
+    "bi_dataset/tasks/test.jsonl",
+    "bi_dataset/events/test.json",
+    "data/manifests/bi_test.json"
+  ],
+  "gates": [
+    {
+      "id": "spec-check",
+      "level": "static",
+      "command": [
+        "python3",
+        "scripts/check_spec.py"
+      ],
+      "timeout_seconds": 60,
+      "required": true
+    },
+    {
+      "id": "lint",
+      "level": "static",
+      "command": [
+        "ruff",
+        "check",
+        "."
+      ],
+      "timeout_seconds": 120,
+      "required": true
+    },
+    {
+      "id": "import-boundaries",
+      "level": "static",
+      "command": [
+        "lint-imports"
+      ],
+      "timeout_seconds": 120,
+      "required": true
+    },
+    {
+      "id": "unit-tests",
+      "level": "unit",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/unit"
+      ],
+      "timeout_seconds": 600,
+      "required": true
+    },
+    {
+      "id": "safety-corpus",
+      "level": "unit",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/safety_corpus"
+      ],
+      "timeout_seconds": 300,
+      "required": true
+    },
+    {
+      "id": "integration-sqlite",
+      "level": "integration",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration",
+        "-m",
+        "not postgres and not live"
+      ],
+      "timeout_seconds": 900,
+      "required": true
+    },
+    {
+      "id": "integration-postgres",
+      "level": "integration",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration",
+        "-m",
+        "postgres and not live"
+      ],
+      "timeout_seconds": 900,
+      "required": true
+    },
+    {
+      "id": "bi-generator-determinism",
+      "level": "integration",
+      "command": [
+        "python3",
+        "-m",
+        "bi_dataset.generate",
+        "--instance",
+        "dev",
+        "--check-determinism"
+      ],
+      "timeout_seconds": 900,
+      "required": true
+    },
+    {
+      "id": "replay-tests",
+      "level": "e2e",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/replay"
+      ],
+      "timeout_seconds": 900,
+      "required": true
+    },
+    {
+      "id": "live-smoke-b0",
+      "level": "e2e",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/live",
+        "-m",
+        "live",
+        "-k",
+        "b0"
+      ],
+      "timeout_seconds": 1800,
+      "required": true
+    }
+  ]
+}

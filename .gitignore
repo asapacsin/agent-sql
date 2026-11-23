@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Experiment outputs and downloads (archived as release assets, not committed)
+results/
+data/downloads/
+*.sqlite
+*.db
+
+# ai-native runtime state (canonical definitions stay in docs/spec/)
+.ai-native/
+
+# Secrets
+.env
+.env.*

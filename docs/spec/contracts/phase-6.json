@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "task_id": "phase-6",
+  "goal": "Pilot, preregistration, main evaluation, ablations, robustness, failure analysis, and technical report",
+  "acceptance": "Every preregistered hypothesis reported with effect size, CI, and Holm-adjusted p; every ablation classified; failure codes cover all failed B0 and A2 test tasks; reports regenerate byte-for-byte from archived raw outputs",
+  "boundaries": [
+    "Follow AGENTS.md; deterministic code enforces safety, budgets, and answer contracts",
+    "Never weaken, skip, or delete a test or gate to obtain PASS",
+    "No secrets in code, configs, traces, reports, or commits",
+    "Never claim performance results from dev/val runs, FakeLLM, or replay as experimental results",
+    "No config, prompt, or budget change after preregistration; post-hoc analyses are labeled exploratory",
+    "Stop at max_experiment_usd; never exceed the approved budget"
+  ],
+  "model_policy": {
+    "executor_default": "low-cost capable coding model",
+    "independent_reviewer": "stronger independent model or human reviewer, read-only",
+    "escalate_on": [
+      "architecture conflict",
+      "two failed fixes",
+      "uncertain root cause",
+      "spec contradiction"
+    ]
+  },
+  "budgets": {
+    "max_attempts": 3,
+    "max_total_seconds": 7200
+  },
+  "approved_paths": [
+    "agent_sql/**",
+    "tests/**",
+    "configs/**",
+    "prompts/**",
+    "scripts/**",
+    "pyproject.toml",
+    "docker-compose.yml",
+    "docs/spec/work.json",
+    "reports/**",
+    "experiments/**"
+  ],
+  "forbidden_paths": [
+    "AGENTS.md",
+    ".github/workflows/**",
+    "docs/spec/contracts/**",
+    "docs/spec/requirements/**",
+    "data/splits/bird.json",
+    "bi_dataset/tasks/test.jsonl",
+    "bi_dataset/events/test.json",
+    "data/manifests/bi_test.json",
+    "prompts/**"
+  ],
+  "gates": [
+    {
+      "id": "spec-check",
+      "level": "static",
+      "command": [
+        "python3",
+        "scripts/check_spec.py"
+      ],
+      "timeout_seconds": 60,
+      "required": true
+    },
+    {
+      "id": "unit-tests",
+      "level": "unit",
+      "command": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/unit"
+      ],
+      "timeout_seconds": 600,
+      "required": true
+    },
+    {
+      "id": "preregistration-locked",
+      "level": "static",
+      "command": [
+        "python3",
+        "-m",
+        "agent_sql",
+        "prereg",
+        "--verify"
+      ],
+      "timeout_seconds": 300,
+      "required": true
+    },
+    {
+      "id": "reports-reproducible",
+      "level": "e2e",
+      "command": [
+        "python3",
+        "-m",
+        "agent_sql",
+        "report",
+        "--verify-reproducible",
+        "--all"
+      ],
+      "timeout_seconds": 3600,
+      "required": true
+    }
+  ]
+}

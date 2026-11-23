@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "task_id": "phase-0",
+  "goal": "Produce the complete, internally consistent technical specification for the Agentic SQL Analyst",
+  "acceptance": "All nine docs/spec documents and README exist; scripts/check_spec.py reports no errors; spec tests pass; the work frontier is acyclic and executable in phase order; no performance claims are made",
+  "boundaries": [
+    "Follow AGENTS.md; deterministic code enforces safety, budgets, and answer contracts",
+    "Never weaken, skip, or delete a test or gate to obtain PASS",
+    "No secrets in code, configs, traces, reports, or commits",
+    "Never claim performance results from dev/val runs, FakeLLM, or replay as experimental results",
+    "Do not implement the application in Phase 0"
+  ],
+  "model_policy": {
+    "executor_default": "low-cost capable coding model",
+    "independent_reviewer": "stronger independent model or human reviewer, read-only",
+    "escalate_on": [
+      "architecture conflict",
+      "two failed fixes",
+      "uncertain root cause",
+      "spec contradiction"
+    ]
+  },
+  "budgets": {
+    "max_attempts": 3,
+    "max_total_seconds": 3600
+  },
+  "approved_paths": [
+    "README.md",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "docs/spec/**",
+    "scripts/check_spec.py",
+    "tests/spec/**",
+    ".github/**",
+    ".gitignore"
+  ],
+  "forbidden_paths": [],
+  "gates": [
+    {
+      "id": "spec-check",
+      "level": "static",
+      "command": [
+        "python3",
+        "scripts/check_spec.py"
+      ],
+      "timeout_seconds": 60,
+      "required": true
+    },
+    {
+      "id": "spec-tests",
+      "level": "unit",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests/spec",
+        "-v"
+      ],
+      "timeout_seconds": 120,
+      "required": true
+    }
+  ]
+}

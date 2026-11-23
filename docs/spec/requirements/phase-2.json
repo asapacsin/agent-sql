@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "contract": "contracts/phase-2.json",
+  "requirements": [
+    {
+      "id": "bird-integrity",
+      "min_level": "integration",
+      "gate_ids": [
+        "bird-manifest"
+      ],
+      "terminal_required": false
+    },
+    {
+      "id": "splits-frozen",
+      "min_level": "static",
+      "gate_ids": [
+        "bird-splits-frozen",
+        "bi-test-frozen"
+      ],
+      "terminal_required": false
+    },
+    {
+      "id": "bird-scoring-parity",
+      "min_level": "integration",
+      "gate_ids": [
+        "bird-parity"
+      ],
+      "terminal_required": false
+    },
+    {
+      "id": "FR-02-b1-interface",
+      "min_level": "integration",
+      "gate_ids": [
+        "integration-sqlite",
+        "replay-tests"
+      ],
+      "terminal_required": false
+    }
+  ]
+}

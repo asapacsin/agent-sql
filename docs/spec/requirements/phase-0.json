@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "contract": "contracts/phase-0.json",
+  "requirements": [
+    {
+      "id": "spec-consistency",
+      "min_level": "static",
+      "gate_ids": [
+        "spec-check",
+        "spec-tests"
+      ],
+      "terminal_required": false
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+name: spec-and-tests
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  spec:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Spec consistency gate (phase-0 gate spec-check)
+        run: python3 scripts/check_spec.py
+      - name: Spec tests (phase-0 gate spec-tests)
+        run: python3 -m unittest discover -s tests/spec -v
+      - name: Cross-validate contracts and frontier with ai-native-engineering (pinned)
+        run: |
+          git clone --quiet https://github.com/asapacsin/ai-native-engineering /tmp/ai-native
+          git -C /tmp/ai-native checkout --quiet 1a161b849e6faaca9678c6e35c7e730d33e12ac0
+          for c in docs/spec/contracts/*.json; do
+            python3 /tmp/ai-native/scripts/ai_native.py validate --contract "$c"
+          done
+          python3 /tmp/ai-native/scripts/frontier.py check --registry docs/spec/work.json

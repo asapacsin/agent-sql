@@ -1,0 +1,723 @@
+{
+  "schema_version": 1,
+  "description": "Canonical work frontier for agent-sql (ai-native-engineering format). Runtime status for supervised runs belongs in a gitignored .ai-native/work.json copy.",
+  "work": [
+    {
+      "id": "p0-spec",
+      "owner": "AUTONOMOUS",
+      "status": "PASS",
+      "priority": 0,
+      "action": "Write and self-check the specification documents and governance files",
+      "depends_on": [],
+      "contract_path": "contracts/phase-0.json",
+      "phase": 0,
+      "evidence": [
+        "gate spec-check: python3 scripts/check_spec.py -> exit 0 on the Phase 0 commit",
+        "gate spec-tests: python3 -m unittest discover -s tests/spec -v -> OK on the Phase 0 commit",
+        "contracts validated with ai-native-engineering scripts/ai_native.py validate",
+        "independent review: delegated to owner approval h-approve-spec; no reviewer model configured"
+      ]
+    },
+    {
+      "id": "h-approve-spec",
+      "owner": "HUMAN_DECISION",
+      "status": "HUMAN_REQUIRED",
+      "priority": 1,
+      "action": "Owner reviews docs/spec and approves or requests changes",
+      "depends_on": [
+        "p0-spec"
+      ],
+      "phase": 0,
+      "automation_blocker": "Spec approval is an owner decision about scope and risk appetite",
+      "procedure": "Read README.md and docs/spec/*.md; approve, or list required changes",
+      "pass_criteria": "Explicit owner approval recorded (comment or commit) for spec v0.1.0",
+      "expected_return": "Approval or a list of requested changes",
+      "quantified": {
+        "options": [
+          "approve v0.1.0 as-is",
+          "approve with listed changes",
+          "reject"
+        ],
+        "cost_of_delay": "Phase 1 cannot start"
+      }
+    },
+    {
+      "id": "h-provide-api-key",
+      "owner": "HUMAN_CREDENTIAL",
+      "status": "HUMAN_REQUIRED",
+      "priority": 2,
+      "action": "Provide an Anthropic API credential to the execution environment (environment variable or secret store, never committed)",
+      "depends_on": [],
+      "phase": 1,
+      "automation_blocker": "Credentials must be provisioned by the account owner",
+      "procedure": "Configure ANTHROPIC_API_KEY (or an equivalent SDK credential) in the runtime environment's secret settings",
+      "pass_criteria": "tests/live smoke test can authenticate",
+      "expected_return": "Confirmation that the credential is configured (not the value)"
+    },
+    {
+      "id": "p1-scaffold",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 10,
+      "action": "Create package skeleton, pyproject, lint, pytest markers, import-linter, docker-compose, CI",
+      "depends_on": [
+        "h-approve-spec"
+      ],
+      "contract_path": "contracts/phase-1.json",
+      "phase": 1
+    },
+    {
+      "id": "p1-config",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 20,
+      "action": "Config models, hashing, prompt registry, configs generated from parameters.json",
+      "depends_on": [
+        "p1-scaffold"
+      ],
+      "contract_path": "contracts/phase-1.json",
+      "phase": 1
+    },
+    {
+      "id": "p1-llm",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 30,
+      "action": "LLM protocol, Anthropic adapter, FakeLLM, record/replay cache, pricing",
+      "depends_on": [
+        "p1-config"
+      ],
+      "contract_path": "contracts/phase-1.json",
+      "phase": 1
+    },
+    {
+      "id": "p1-tracing",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 40,
+      "action": "Trace events, JSONL writer, redaction, run manifest",
+      "depends_on": [
+        "p1-config"
+      ],
+      "contract_path": "contracts/phase-1.json",
+      "phase": 1
+    },
+    {
+      "id": "p1-db",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 50,
+      "action": "Read-only SQLite and PostgreSQL engines, catalog, executor with limits",
+      "depends_on": [
+        "p1-scaffold"
+      ],
+      "requires": [
+        "docker_postgres"
+      ],
+      "contract_path": "contracts/phase-1.json",
+      "phase": 1
+    },
+    {
+      "id": "p1-safety",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 60,
+      "action": "SQL validator SR1-SR12, policy, adversarial corpus, defense-without-validator test",
+      "depends_on": [
+        "p1-db"
+      ],
+      "requires": [
+        "docker_postgres"
+      ],
+      "contract_path": "contracts/phase-1.json",
+      "phase": 1
+    },
+    {
+      "id": "p1-bi-data",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 70,
+      "action": "RetailCo schema, seeded generator, dev events, loaders, metrics.yaml, data tests",
+      "depends_on": [
+        "p1-db"
+      ],
+      "requires": [
+        "docker_postgres"
+      ],
+      "contract_path": "contracts/phase-1.json",
+      "phase": 1
+    },
+    {
+      "id": "p1-bi-dev-tasks",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 80,
+      "action": "Author 20 BI dev tasks with gold SQL and answer_spec; engine parity test",
+      "depends_on": [
+        "p1-bi-data"
+      ],
+      "contract_path": "contracts/phase-1.json",
+      "phase": 1
+    },
+    {
+      "id": "p1-b0",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 90,
+      "action": "B0 pipeline, composer, prompts, schema and glossary renderers",
+      "depends_on": [
+        "p1-llm",
+        "p1-safety",
+        "p1-tracing",
+        "p1-bi-data"
+      ],
+      "contract_path": "contracts/phase-1.json",
+      "phase": 1
+    },
+    {
+      "id": "p1-eval-harness",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 100,
+      "action": "Runner, comparators, metrics, statistics, failure auto-coding, reports, CLI",
+      "depends_on": [
+        "p1-b0",
+        "p1-bi-dev-tasks"
+      ],
+      "contract_path": "contracts/phase-1.json",
+      "phase": 1
+    },
+    {
+      "id": "p1-live-smoke",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 110,
+      "action": "Live B0 run on BI-dev in record mode; commit replay fixture subset",
+      "depends_on": [
+        "p1-eval-harness",
+        "h-provide-api-key"
+      ],
+      "requires": [
+        "anthropic_api"
+      ],
+      "contract_path": "contracts/phase-1.json",
+      "phase": 1
+    },
+    {
+      "id": "p1-gate",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 120,
+      "action": "Run all required gates in contracts/phase-1.json on a clean commit and obtain independent review",
+      "depends_on": [
+        "p1-scaffold",
+        "p1-config",
+        "p1-llm",
+        "p1-tracing",
+        "p1-db",
+        "p1-safety",
+        "p1-bi-data",
+        "p1-bi-dev-tasks",
+        "p1-b0",
+        "p1-eval-harness",
+        "p1-live-smoke"
+      ],
+      "contract_path": "contracts/phase-1.json",
+      "phase": 1
+    },
+    {
+      "id": "p2-bird-download",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 130,
+      "action": "Download BIRD dev, verify counts and hashes, load descriptions",
+      "depends_on": [
+        "p1-eval-harness"
+      ],
+      "requires": [
+        "network_bird"
+      ],
+      "contract_path": "contracts/phase-2.json",
+      "phase": 2
+    },
+    {
+      "id": "p2-bird-splits",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 140,
+      "action": "Generate and freeze database-disjoint BIRD splits",
+      "depends_on": [
+        "p2-bird-download"
+      ],
+      "contract_path": "contracts/phase-2.json",
+      "phase": 2
+    },
+    {
+      "id": "p2-bird-parity",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 150,
+      "action": "Comparator parity with official BIRD evaluation script",
+      "depends_on": [
+        "p2-bird-download"
+      ],
+      "contract_path": "contracts/phase-2.json",
+      "phase": 2
+    },
+    {
+      "id": "p2-retrieval",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 160,
+      "action": "Schema docs, BM25 index, value index, recall evaluation, leakage test",
+      "depends_on": [
+        "p2-bird-download"
+      ],
+      "contract_path": "contracts/phase-2.json",
+      "phase": 2
+    },
+    {
+      "id": "p2-b1",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 170,
+      "action": "B1 system and prompt",
+      "depends_on": [
+        "p2-retrieval"
+      ],
+      "contract_path": "contracts/phase-2.json",
+      "phase": 2
+    },
+    {
+      "id": "p2-bi-test-freeze",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 180,
+      "action": "Test events, RetailCo-test, val/test/study tasks; freeze hashes",
+      "depends_on": [
+        "p1-bi-dev-tasks"
+      ],
+      "contract_path": "contracts/phase-2.json",
+      "phase": 2
+    },
+    {
+      "id": "p2-val-baselines",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 190,
+      "action": "Live B0/B1 calibration runs on val (dev-only report)",
+      "depends_on": [
+        "p2-b1",
+        "p2-bird-splits",
+        "p2-bi-test-freeze",
+        "h-provide-api-key"
+      ],
+      "requires": [
+        "anthropic_api"
+      ],
+      "contract_path": "contracts/phase-2.json",
+      "phase": 2
+    },
+    {
+      "id": "p2-gate",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 200,
+      "action": "Run all required gates in contracts/phase-2.json on a clean commit and obtain independent review",
+      "depends_on": [
+        "p2-bird-download",
+        "p2-bird-splits",
+        "p2-bird-parity",
+        "p2-retrieval",
+        "p2-b1",
+        "p2-bi-test-freeze",
+        "p2-val-baselines"
+      ],
+      "contract_path": "contracts/phase-2.json",
+      "phase": 2
+    },
+    {
+      "id": "p3-tools",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 210,
+      "action": "Tool registry and the 8 data tools plus submit_answer",
+      "depends_on": [
+        "p2-b1"
+      ],
+      "contract_path": "contracts/phase-3.json",
+      "phase": 3
+    },
+    {
+      "id": "p3-orchestrator",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 220,
+      "action": "Bounded state machine, budget guard, FINALIZE, answer contract",
+      "depends_on": [
+        "p3-tools"
+      ],
+      "contract_path": "contracts/phase-3.json",
+      "phase": 3
+    },
+    {
+      "id": "p3-a1",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 230,
+      "action": "A1 system, prompt, and A1 ablation flags",
+      "depends_on": [
+        "p3-orchestrator"
+      ],
+      "contract_path": "contracts/phase-3.json",
+      "phase": 3
+    },
+    {
+      "id": "p3-fault-injection",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 240,
+      "action": "FM1 wrapper, drift and casing DB variants, E3 configs",
+      "depends_on": [
+        "p3-a1",
+        "p2-bi-test-freeze"
+      ],
+      "contract_path": "contracts/phase-3.json",
+      "phase": 3
+    },
+    {
+      "id": "p3-a1-val",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 250,
+      "action": "Live A1 calibration on val; budget-hit rates",
+      "depends_on": [
+        "p3-a1",
+        "h-provide-api-key"
+      ],
+      "requires": [
+        "anthropic_api"
+      ],
+      "contract_path": "contracts/phase-3.json",
+      "phase": 3
+    },
+    {
+      "id": "p3-gate",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 260,
+      "action": "Run all required gates in contracts/phase-3.json on a clean commit and obtain independent review",
+      "depends_on": [
+        "p3-tools",
+        "p3-orchestrator",
+        "p3-a1",
+        "p3-fault-injection",
+        "p3-a1-val"
+      ],
+      "contract_path": "contracts/phase-3.json",
+      "phase": 3
+    },
+    {
+      "id": "p4-verification",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 270,
+      "action": "V1-V8, grounding, metric conformance, reconciliation, post-hoc hook",
+      "depends_on": [
+        "p3-a1"
+      ],
+      "contract_path": "contracts/phase-4.json",
+      "phase": 4
+    },
+    {
+      "id": "p4-a2",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 280,
+      "action": "A2 plan/step/inspect/verify/grounding state machine and prompts",
+      "depends_on": [
+        "p4-verification"
+      ],
+      "contract_path": "contracts/phase-4.json",
+      "phase": 4
+    },
+    {
+      "id": "p4-ablations",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 290,
+      "action": "planning/verification flags, B1-SC, ablation configs AB1-AB9",
+      "depends_on": [
+        "p4-a2"
+      ],
+      "contract_path": "contracts/phase-4.json",
+      "phase": 4
+    },
+    {
+      "id": "p4-a2-val",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 300,
+      "action": "Live A2 calibration on val; choose B1-SC n",
+      "depends_on": [
+        "p4-ablations",
+        "h-provide-api-key"
+      ],
+      "requires": [
+        "anthropic_api"
+      ],
+      "contract_path": "contracts/phase-4.json",
+      "phase": 4
+    },
+    {
+      "id": "p4-gate",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 310,
+      "action": "Run all required gates in contracts/phase-4.json on a clean commit and obtain independent review",
+      "depends_on": [
+        "p4-verification",
+        "p4-a2",
+        "p4-ablations",
+        "p4-a2-val"
+      ],
+      "contract_path": "contracts/phase-4.json",
+      "phase": 4
+    },
+    {
+      "id": "p5-ui",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 320,
+      "action": "Streamlit Ask, Compare, Trace pages with deterministic charts",
+      "depends_on": [
+        "p4-a2"
+      ],
+      "contract_path": "contracts/phase-5.json",
+      "phase": 5
+    },
+    {
+      "id": "p5-gate",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 330,
+      "action": "Run all required gates in contracts/phase-5.json on a clean commit and obtain independent review",
+      "depends_on": [
+        "p5-ui"
+      ],
+      "contract_path": "contracts/phase-5.json",
+      "phase": 5
+    },
+    {
+      "id": "p6-pilot",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 340,
+      "action": "E0 pilot on val: measured cost and latency per system",
+      "depends_on": [
+        "p4-a2-val"
+      ],
+      "requires": [
+        "anthropic_api"
+      ],
+      "contract_path": "contracts/phase-6.json",
+      "phase": 6
+    },
+    {
+      "id": "p6-preregister",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 350,
+      "action": "Commit preregistration with frozen config and manifest hashes",
+      "depends_on": [
+        "p6-pilot",
+        "h-approve-budget"
+      ],
+      "contract_path": "contracts/phase-6.json",
+      "phase": 6
+    },
+    {
+      "id": "p6-main",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 360,
+      "action": "E1 main comparison: 4 systems x 200 tasks x 3 runs",
+      "depends_on": [
+        "p6-preregister"
+      ],
+      "requires": [
+        "anthropic_api"
+      ],
+      "contract_path": "contracts/phase-6.json",
+      "phase": 6
+    },
+    {
+      "id": "p6-ablations",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 370,
+      "action": "E2 ablations per approved budget",
+      "depends_on": [
+        "p6-main"
+      ],
+      "requires": [
+        "anthropic_api"
+      ],
+      "contract_path": "contracts/phase-6.json",
+      "phase": 6
+    },
+    {
+      "id": "p6-robustness",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 380,
+      "action": "E3 fault-injection suite",
+      "depends_on": [
+        "p6-main",
+        "p3-fault-injection"
+      ],
+      "requires": [
+        "anthropic_api"
+      ],
+      "contract_path": "contracts/phase-6.json",
+      "phase": 6
+    },
+    {
+      "id": "p6-cross-engine",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 390,
+      "action": "E4 exploratory cross-engine check",
+      "depends_on": [
+        "p6-main"
+      ],
+      "requires": [
+        "anthropic_api"
+      ],
+      "contract_path": "contracts/phase-6.json",
+      "phase": 6
+    },
+    {
+      "id": "p6-failure-analysis",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 400,
+      "action": "E7 labeling guide, failure coding, comparator audit",
+      "depends_on": [
+        "p6-main"
+      ],
+      "contract_path": "contracts/phase-6.json",
+      "phase": 6
+    },
+    {
+      "id": "p6-report",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 410,
+      "action": "Technical report with all hypotheses, ablations, failures, NOT_VERIFIED list",
+      "depends_on": [
+        "p6-ablations",
+        "p6-robustness",
+        "p6-failure-analysis"
+      ],
+      "contract_path": "contracts/phase-6.json",
+      "phase": 6
+    },
+    {
+      "id": "p6-gate",
+      "owner": "AUTONOMOUS",
+      "status": "NOT_RUN",
+      "priority": 420,
+      "action": "Run all required gates in contracts/phase-6.json on a clean commit and obtain independent review",
+      "depends_on": [
+        "p6-pilot",
+        "p6-preregister",
+        "p6-main",
+        "p6-ablations",
+        "p6-robustness",
+        "p6-cross-engine",
+        "p6-failure-analysis",
+        "p6-report"
+      ],
+      "contract_path": "contracts/phase-6.json",
+      "phase": 6
+    },
+    {
+      "id": "h-approve-budget",
+      "owner": "HUMAN_DECISION",
+      "status": "HUMAN_REQUIRED",
+      "priority": 430,
+      "action": "Approve max_experiment_usd after reviewing the E0 measured cost",
+      "depends_on": [
+        "p6-pilot"
+      ],
+      "phase": 6,
+      "automation_blocker": "Spending money is an owner decision",
+      "procedure": "Read reports/e0_pilot.md (measured cost per task per system) and choose an option",
+      "pass_criteria": "A numeric max_experiment_usd and the chosen ablation run count are recorded",
+      "expected_return": "Chosen option and cap in USD",
+      "quantified": {
+        "planning_estimates_usd_unmeasured": {
+          "A_full_E1_E2x3_E3": "approx 2000-4600",
+          "B_full_E1_E2x1_E3": "approx 1000-2300",
+          "C_E1_and_E3_only": "approx 500-1100"
+        },
+        "note": "Replace with E0 measured costs before deciding"
+      }
+    },
+    {
+      "id": "h-run-analyst-study",
+      "owner": "HUMAN_PHYSICAL",
+      "status": "HUMAN_REQUIRED",
+      "priority": 440,
+      "action": "Run the E5 analyst time-to-answer study",
+      "depends_on": [
+        "p5-gate",
+        "p2-bi-test-freeze"
+      ],
+      "phase": 6,
+      "automation_blocker": "Requires recruiting and timing human participants",
+      "procedure": "Follow docs/spec/EXPERIMENTS.md section 11 with >= 5 SQL-literate participants",
+      "pass_criteria": "Timing and correctness recorded for all participant-task pairs",
+      "expected_return": "Anonymized CSV of participant, task, condition, seconds, correctness, intervention"
+    },
+    {
+      "id": "h-judge-audit",
+      "owner": "HUMAN_PHYSICAL",
+      "status": "HUMAN_REQUIRED",
+      "priority": 450,
+      "action": "Human-label 50 diagnostic answers for the S07 judge audit (E6)",
+      "depends_on": [
+        "p6-main"
+      ],
+      "phase": 6,
+      "automation_blocker": "Requires human judgment as the reference standard",
+      "procedure": "Label blinded answers with the S07 rubric",
+      "pass_criteria": "50 labeled items; kappa computed against the judge",
+      "expected_return": "Labels file"
+    },
+    {
+      "id": "h-independent-test-author",
+      "owner": "HUMAN_DECISION",
+      "status": "HUMAN_REQUIRED",
+      "priority": 460,
+      "action": "Optional: an independent person writes or reviews the BI test tasks before freezing",
+      "depends_on": [
+        "p1-bi-dev-tasks"
+      ],
+      "phase": 2,
+      "automation_blocker": "Independence from the agent authors cannot be automated",
+      "procedure": "Decide whether an independent author is available; if yes, they author/review bi_dataset/tasks/test.jsonl before p2-bi-test-freeze",
+      "pass_criteria": "Decision recorded; if yes, reviewer sign-off recorded",
+      "expected_return": "yes/no and reviewer sign-off",
+      "quantified": {
+        "options": [
+          "independent author",
+          "independent reviewer only",
+          "none (limitation R05)"
+        ],
+        "effect": "reduces author-bias risk R05"
+      }
+    }
+  ]
+}

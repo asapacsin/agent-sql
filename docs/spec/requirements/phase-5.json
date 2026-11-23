@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "contract": "contracts/phase-5.json",
+  "requirements": [
+    {
+      "id": "FR-12-ui",
+      "min_level": "e2e",
+      "gate_ids": [
+        "ui-apptest"
+      ],
+      "terminal_required": false
+    }
+  ]
+}
