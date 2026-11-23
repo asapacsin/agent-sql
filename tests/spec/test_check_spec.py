@@ -88,7 +88,9 @@ class MutationTest(unittest.TestCase):
 
     def test_detects_pass_without_evidence(self):
         def mutate(d):
-            next(w for w in d["work"] if w["id"] == "p1-scaffold")["status"] = "PASS"
+            item = next(w for w in d["work"] if w["id"] == "p3-tools")
+            item["status"] = "PASS"
+            item.pop("evidence", None)
         self._edit_json("docs/spec/work.json", mutate)
         self.assertReports("PASS requires an evidence list")
 
