@@ -60,55 +60,71 @@
     {
       "id": "p1-scaffold",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 10,
       "action": "Create package skeleton, pyproject, lint, pytest markers, import-linter, docker-compose, CI",
       "depends_on": [
         "h-approve-spec"
       ],
       "contract_path": "contracts/phase-1.json",
-      "phase": 1
+      "phase": 1,
+      "evidence": [
+        "phase-1 gates on clean commit 0cb3207: spec-check, lint, import-boundaries, unit-tests, safety-corpus, integration-sqlite, integration-postgres, bi-generator-determinism, replay-tests PASS (scripts/run_gates.py)",
+        "independent review (separate Opus 5.5 reviewer, read-only): round 1 REWORK (3 major), round 2 PASS on 0cb3207"
+      ]
     },
     {
       "id": "p1-config",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 20,
       "action": "Config models, hashing, prompt registry, configs generated from parameters.json",
       "depends_on": [
         "p1-scaffold"
       ],
       "contract_path": "contracts/phase-1.json",
-      "phase": 1
+      "phase": 1,
+      "evidence": [
+        "phase-1 gates on clean commit 0cb3207: spec-check, lint, import-boundaries, unit-tests, safety-corpus, integration-sqlite, integration-postgres, bi-generator-determinism, replay-tests PASS (scripts/run_gates.py)",
+        "independent review (separate Opus 5.5 reviewer, read-only): round 1 REWORK (3 major), round 2 PASS on 0cb3207"
+      ]
     },
     {
       "id": "p1-llm",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 30,
       "action": "LLM protocol, Anthropic adapter, FakeLLM, record/replay cache, pricing",
       "depends_on": [
         "p1-config"
       ],
       "contract_path": "contracts/phase-1.json",
-      "phase": 1
+      "phase": 1,
+      "evidence": [
+        "phase-1 gates on clean commit 0cb3207: spec-check, lint, import-boundaries, unit-tests, safety-corpus, integration-sqlite, integration-postgres, bi-generator-determinism, replay-tests PASS (scripts/run_gates.py)",
+        "independent review (separate Opus 5.5 reviewer, read-only): round 1 REWORK (3 major), round 2 PASS on 0cb3207"
+      ]
     },
     {
       "id": "p1-tracing",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 40,
       "action": "Trace events, JSONL writer, redaction, run manifest",
       "depends_on": [
         "p1-config"
       ],
       "contract_path": "contracts/phase-1.json",
-      "phase": 1
+      "phase": 1,
+      "evidence": [
+        "phase-1 gates on clean commit 0cb3207: spec-check, lint, import-boundaries, unit-tests, safety-corpus, integration-sqlite, integration-postgres, bi-generator-determinism, replay-tests PASS (scripts/run_gates.py)",
+        "independent review (separate Opus 5.5 reviewer, read-only): round 1 REWORK (3 major), round 2 PASS on 0cb3207"
+      ]
     },
     {
       "id": "p1-db",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 50,
       "action": "Read-only SQLite and PostgreSQL engines, catalog, executor with limits",
       "depends_on": [
@@ -118,12 +134,16 @@
         "docker_postgres"
       ],
       "contract_path": "contracts/phase-1.json",
-      "phase": 1
+      "phase": 1,
+      "evidence": [
+        "phase-1 gates on clean commit 0cb3207: spec-check, lint, import-boundaries, unit-tests, safety-corpus, integration-sqlite, integration-postgres, bi-generator-determinism, replay-tests PASS (scripts/run_gates.py)",
+        "independent review (separate Opus 5.5 reviewer, read-only): round 1 REWORK (3 major), round 2 PASS on 0cb3207"
+      ]
     },
     {
       "id": "p1-safety",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 60,
       "action": "SQL validator SR1-SR12, policy, adversarial corpus, defense-without-validator test",
       "depends_on": [
@@ -133,12 +153,16 @@
         "docker_postgres"
       ],
       "contract_path": "contracts/phase-1.json",
-      "phase": 1
+      "phase": 1,
+      "evidence": [
+        "phase-1 gates on clean commit 0cb3207: spec-check, lint, import-boundaries, unit-tests, safety-corpus, integration-sqlite, integration-postgres, bi-generator-determinism, replay-tests PASS (scripts/run_gates.py)",
+        "independent review (separate Opus 5.5 reviewer, read-only): round 1 REWORK (3 major), round 2 PASS on 0cb3207"
+      ]
     },
     {
       "id": "p1-bi-data",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 70,
       "action": "RetailCo schema, seeded generator, dev events, loaders, metrics.yaml, data tests",
       "depends_on": [
@@ -148,24 +172,32 @@
         "docker_postgres"
       ],
       "contract_path": "contracts/phase-1.json",
-      "phase": 1
+      "phase": 1,
+      "evidence": [
+        "phase-1 gates on clean commit 0cb3207: spec-check, lint, import-boundaries, unit-tests, safety-corpus, integration-sqlite, integration-postgres, bi-generator-determinism, replay-tests PASS (scripts/run_gates.py)",
+        "independent review (separate Opus 5.5 reviewer, read-only): round 1 REWORK (3 major), round 2 PASS on 0cb3207"
+      ]
     },
     {
       "id": "p1-bi-dev-tasks",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 80,
       "action": "Author 20 BI dev tasks with gold SQL and answer_spec; engine parity test",
       "depends_on": [
         "p1-bi-data"
       ],
       "contract_path": "contracts/phase-1.json",
-      "phase": 1
+      "phase": 1,
+      "evidence": [
+        "phase-1 gates on clean commit 0cb3207: spec-check, lint, import-boundaries, unit-tests, safety-corpus, integration-sqlite, integration-postgres, bi-generator-determinism, replay-tests PASS (scripts/run_gates.py)",
+        "independent review (separate Opus 5.5 reviewer, read-only): round 1 REWORK (3 major), round 2 PASS on 0cb3207"
+      ]
     },
     {
       "id": "p1-b0",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 90,
       "action": "B0 pipeline, composer, prompts, schema and glossary renderers",
       "depends_on": [
@@ -175,12 +207,16 @@
         "p1-bi-data"
       ],
       "contract_path": "contracts/phase-1.json",
-      "phase": 1
+      "phase": 1,
+      "evidence": [
+        "phase-1 gates on clean commit 0cb3207: spec-check, lint, import-boundaries, unit-tests, safety-corpus, integration-sqlite, integration-postgres, bi-generator-determinism, replay-tests PASS (scripts/run_gates.py)",
+        "independent review (separate Opus 5.5 reviewer, read-only): round 1 REWORK (3 major), round 2 PASS on 0cb3207"
+      ]
     },
     {
       "id": "p1-eval-harness",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 100,
       "action": "Runner, comparators, metrics, statistics, failure auto-coding, reports, CLI",
       "depends_on": [
@@ -188,12 +224,16 @@
         "p1-bi-dev-tasks"
       ],
       "contract_path": "contracts/phase-1.json",
-      "phase": 1
+      "phase": 1,
+      "evidence": [
+        "phase-1 gates on clean commit 0cb3207: spec-check, lint, import-boundaries, unit-tests, safety-corpus, integration-sqlite, integration-postgres, bi-generator-determinism, replay-tests PASS (scripts/run_gates.py)",
+        "independent review (separate Opus 5.5 reviewer, read-only): round 1 REWORK (3 major), round 2 PASS on 0cb3207"
+      ]
     },
     {
       "id": "p1-live-smoke",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "BLOCKED_EXTERNAL",
       "priority": 110,
       "action": "Live B0 run on BI-dev in record mode; commit replay fixture subset",
       "depends_on": [
@@ -204,12 +244,13 @@
         "anthropic_api"
       ],
       "contract_path": "contracts/phase-1.json",
-      "phase": 1
+      "phase": 1,
+      "blocked_by": "h-provide-api-key: no Anthropic credential in the execution environment"
     },
     {
       "id": "p1-gate",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "BLOCKED_EXTERNAL",
       "priority": 120,
       "action": "Run all required gates in contracts/phase-1.json on a clean commit and obtain independent review",
       "depends_on": [
@@ -226,12 +267,13 @@
         "p1-live-smoke"
       ],
       "contract_path": "contracts/phase-1.json",
-      "phase": 1
+      "phase": 1,
+      "blocked_by": "live gate live-smoke-b0 needs h-provide-api-key; all offline gates PASS + review PASS"
     },
     {
       "id": "p2-bird-download",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 130,
       "action": "Download BIRD dev, verify counts and hashes, load descriptions",
       "depends_on": [
@@ -241,72 +283,96 @@
         "network_bird"
       ],
       "contract_path": "contracts/phase-2.json",
-      "phase": 2
+      "phase": 2,
+      "evidence": [
+        "phase-2 gates on clean commit 4dabe4b: all 12 PASS incl. bird-manifest, bird-splits-frozen, bird-parity (0/400 disagreements), bi-test-frozen",
+        "independent review of phase 2: pending"
+      ]
     },
     {
       "id": "p2-bird-splits",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 140,
       "action": "Generate and freeze database-disjoint BIRD splits",
       "depends_on": [
         "p2-bird-download"
       ],
       "contract_path": "contracts/phase-2.json",
-      "phase": 2
+      "phase": 2,
+      "evidence": [
+        "phase-2 gates on clean commit 4dabe4b: all 12 PASS incl. bird-manifest, bird-splits-frozen, bird-parity (0/400 disagreements), bi-test-frozen",
+        "independent review of phase 2: pending"
+      ]
     },
     {
       "id": "p2-bird-parity",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 150,
       "action": "Comparator parity with official BIRD evaluation script",
       "depends_on": [
         "p2-bird-download"
       ],
       "contract_path": "contracts/phase-2.json",
-      "phase": 2
+      "phase": 2,
+      "evidence": [
+        "phase-2 gates on clean commit 4dabe4b: all 12 PASS incl. bird-manifest, bird-splits-frozen, bird-parity (0/400 disagreements), bi-test-frozen",
+        "independent review of phase 2: pending"
+      ]
     },
     {
       "id": "p2-retrieval",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 160,
       "action": "Schema docs, BM25 index, value index, recall evaluation, leakage test",
       "depends_on": [
         "p2-bird-download"
       ],
       "contract_path": "contracts/phase-2.json",
-      "phase": 2
+      "phase": 2,
+      "evidence": [
+        "phase-2 gates on clean commit 4dabe4b: all 12 PASS incl. bird-manifest, bird-splits-frozen, bird-parity (0/400 disagreements), bi-test-frozen",
+        "independent review of phase 2: pending"
+      ]
     },
     {
       "id": "p2-b1",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 170,
       "action": "B1 system and prompt",
       "depends_on": [
         "p2-retrieval"
       ],
       "contract_path": "contracts/phase-2.json",
-      "phase": 2
+      "phase": 2,
+      "evidence": [
+        "phase-2 gates on clean commit 4dabe4b: all 12 PASS incl. bird-manifest, bird-splits-frozen, bird-parity (0/400 disagreements), bi-test-frozen",
+        "independent review of phase 2: pending"
+      ]
     },
     {
       "id": "p2-bi-test-freeze",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 180,
       "action": "Test events, RetailCo-test, val/test/study tasks; freeze hashes",
       "depends_on": [
         "p1-bi-dev-tasks"
       ],
       "contract_path": "contracts/phase-2.json",
-      "phase": 2
+      "phase": 2,
+      "evidence": [
+        "phase-2 gates on clean commit 4dabe4b: all 12 PASS incl. bird-manifest, bird-splits-frozen, bird-parity (0/400 disagreements), bi-test-frozen",
+        "independent review of phase 2: pending"
+      ]
     },
     {
       "id": "p2-val-baselines",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "BLOCKED_EXTERNAL",
       "priority": 190,
       "action": "Live B0/B1 calibration runs on val (dev-only report)",
       "depends_on": [
@@ -319,7 +385,8 @@
         "anthropic_api"
       ],
       "contract_path": "contracts/phase-2.json",
-      "phase": 2
+      "phase": 2,
+      "blocked_by": "h-provide-api-key: no Anthropic credential in the execution environment"
     },
     {
       "id": "p2-gate",

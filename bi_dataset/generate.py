@@ -499,7 +499,8 @@ def write_agent_copy(src: Path, dst: Path) -> None:
     """Agent-facing SQLite copy: restricted column values replaced by NULL (TOOLS.md L4 defense in depth).
 
     The SQLite authorizer cannot see columns referenced through JOIN ... USING / NATURAL JOIN, so the values are
-    removed physically; the evaluator keeps using the full file.
+    removed physically. Both systems and the evaluator open this copy by default (gold SQL never reads restricted
+    columns); `bi_sqlite_path(instance, agent=False)` gives the full file.
     """
     import yaml
 
