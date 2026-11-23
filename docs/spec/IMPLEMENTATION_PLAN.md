@@ -80,7 +80,7 @@ No agent framework, vector database, or message queue.
 - Unit: config hashing stability; prompt registry versioning; pricing math; FakeLLM scripting; record/replay miss → error; validator rules (one test per rule); comparator cases (set semantics, tolerance, column mapping, top-k order, F1); stats against known values (Wilson, McNemar exact p, Holm); failure auto-coding from synthetic traces; answer contract (no claims on failure).
 - Safety corpus: every case matches its expected outcome.
 - Integration: SQLite read-only (write attempt fails at L4); Postgres `agent_ro` (write fails at L2, restricted column fails, timeout fires); executor truncation flag; BI generator determinism (byte-identical CSVs) and invariants; gold parity SQLite == Postgres; B0 end-to-end with FakeLLM on 3 tasks.
-- Replay: B0 on fixture tasks reproduces recorded predictions byte-for-byte.
+- Replay: B0 on fixture tasks reproduces recorded predictions exactly, excluding wall-clock fields and `run_id`.
 
 ### Acceptance criteria
 

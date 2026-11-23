@@ -1,0 +1,10 @@
+# Phase 1 live smoke (dev split only; dev-time output, never reported as a result).
+experiment_id: p1_b0_bi_dev
+datasets: [{dataset: bi, split: dev}]
+systems: [b0]
+runs: 1
+bi_engine: sqlite
+llm: {mode: record}
+concurrency: 2
+max_experiment_usd: 5.0
+exploratory: true

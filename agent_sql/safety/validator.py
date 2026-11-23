@@ -253,7 +253,8 @@ def _unknown_column_name(message: str) -> str | None:
 def _warnings(tree: exp.Expression, policy: AccessPolicy, tables: list[str]) -> list[dict]:
     out = []
     for join in tree.find_all(exp.Join):
-        if not join.args.get("on") and not join.args.get("using") and (join.kind or "").upper() != "CROSS":
+        # sqlglot's SQLite dialect parses comma joins as CROSS, so every unconditioned join warns (non-blocking)
+        if not join.args.get("on") and not join.args.get("using"):
             out.append({"code": "CARTESIAN_JOIN", "detail": "join without a join condition"})
             break
     return out

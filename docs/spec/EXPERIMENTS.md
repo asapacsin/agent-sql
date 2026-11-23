@@ -166,7 +166,7 @@ Also reported: **marginal cost per additional success** = Δ total cost / Δ suc
 Reproduction levels:
 
 - **Re-score** (exact): `agent-sql score` on archived raw outputs reproduces `scores.jsonl` byte-for-byte.
-- **Replay** (exact): `agent-sql run --replay` with the archived LLM cache reproduces predictions byte-for-byte.
+- **Replay** (exact): `agent-sql run --replay` with the archived LLM cache reproduces predictions identically except wall-clock fields (`latency_s`, `llm_latency_s`, `db_latency_s`, `elapsed_ms`) and the random `run_id`, which are excluded from the comparison.
 - **Re-run** (statistical): fresh API calls give new samples. Agreement is judged by overlapping CIs, not identical numbers. The model cannot be made deterministic (no sampling controls), and provider-side model updates under the same id are possible ([RISKS.md](RISKS.md) R04).
 
 ## 8. Reporting rules

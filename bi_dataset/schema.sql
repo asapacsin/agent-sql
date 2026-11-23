@@ -100,3 +100,9 @@ CREATE TABLE calendar (
   day_of_week INTEGER NOT NULL,
   is_holiday BOOLEAN NOT NULL
 );
+CREATE INDEX idx_order_items_order ON order_items(order_id);
+CREATE INDEX idx_order_items_product ON order_items(product_id);
+CREATE INDEX idx_orders_customer ON orders(customer_id);
+CREATE INDEX idx_orders_date ON orders(order_date);
+CREATE INDEX idx_returns_item ON returns(order_item_id);
+CREATE INDEX idx_transactions_order ON transactions(order_id);
