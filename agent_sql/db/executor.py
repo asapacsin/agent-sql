@@ -113,7 +113,7 @@ def _jsonable(value: Any) -> Any:
     if isinstance(value, Decimal):
         return float(value)
     if isinstance(value, (bytes, bytearray, memoryview)):
-        return f"<{len(bytes(value))} bytes>"
+        return "0x" + bytes(value).hex()  # equality-preserving (BIRD EX compares raw values)
     if hasattr(value, "isoformat"):
         return value.isoformat()
     return value
@@ -225,7 +225,8 @@ class Executor:
             with conn.cursor() as cur:
                 cur.execute("SET TRANSACTION READ ONLY")
                 cur.execute(f"SET LOCAL statement_timeout = {int(self.timeout * 1000)}")
-                cur.execute(sql, prepare=False)
+                # prepared (extended) protocol: the server itself rejects a second statement
+                cur.execute(sql, prepare=True)
                 result = self._fetch(cur)
                 if cur.description:
                     result.column_types = [_pg_type_name(d.type_code) for d in cur.description]

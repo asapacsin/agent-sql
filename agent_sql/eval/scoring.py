@@ -30,6 +30,13 @@ def tables_in(sql: str, dialect: str) -> set[str]:
     return {t.name.lower() for t in tree.find_all(exp.Table) if t.name and t.name.lower() not in ctes}
 
 
+def _with_gold_values(spec: dict, gold) -> dict:  # noqa: ANN001
+    """Inject the evaluator-computed gold value into findings that require a value (BENCHMARK.md 4.2)."""
+    value = gold.result.rows[0][0] if gold.ok and gold.result and gold.result.rows else None
+    findings = [{**f, "gold_value": value} if f.get("require_value") else f for f in spec["required_findings"]]
+    return {**spec, "required_findings": findings}
+
+
 @dataclass
 class TaskScore:
     task_id: str
@@ -64,7 +71,7 @@ class TaskScore:
     posthoc_checks: list
     numeric_claims: int         # S01
     grounded_claims: int
-    abstained: bool             # S04
+    abstained: bool             # S04 (INSUFFICIENT_DATA status)
     silent_wrong: bool          # S05
     self_service: bool          # S06
     failure_code: str | None
@@ -126,6 +133,7 @@ class Scorer:
                 correct, detail = False, "final SQL not executable"
             success = bool(correct) and ans.status == spec.get("expected_status", "ANSWERED")
         elif task.task_type == "diagnostic":
+            spec = _with_gold_values(spec, gold)
             v = score_bi_diagnostic(spec, ans, self._events(task.db_id))
             success, detail = v.passed, v.detail
         elif task.task_type == "insufficient":

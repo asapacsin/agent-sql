@@ -210,6 +210,13 @@ def validate_sql(sql: str, policy: AccessPolicy) -> ValidationResult:
         for col in tree.find_all(exp.Column):
             if col.name and col.name.lower() in restricted_here:
                 return _reject("SR8", f"column {col.name!r} is restricted", "RESTRICTED_COLUMN")
+        for join in tree.find_all(exp.Join):
+            if str(join.args.get("method") or "").upper() == "NATURAL":
+                return _reject("SR8", "NATURAL JOIN is not allowed when restricted columns are in scope",
+                               "RESTRICTED_COLUMN")
+            for ident in join.args.get("using") or []:
+                if getattr(ident, "name", str(ident)).lower() in restricted_here:
+                    return _reject("SR8", f"JOIN USING restricted column {ident.name!r}", "RESTRICTED_COLUMN")
 
     # SR9 column existence (qualify against the catalog)
     columns: list[str] = []

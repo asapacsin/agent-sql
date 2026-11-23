@@ -3,8 +3,8 @@
   "seed": 1101,
   "disabled_events": [],
   "events_sha256": "6b89f8b4494483f21f18f47458db333b4d4b9e8e971fe85f25bd73a716d814d5",
-  "schema_sha256": "2a331cd5a64e4ab4bb3ab79f42bd42c0bff4ac4235e87375589d3131737d08cc",
-  "generator_sha256": "92aae8e1ed9f7d32f002f7f960b59f8961b2a21d71707c9b06ad9a89f608b210",
+  "schema_sha256": "fef90e266434ac6faae9674e15ca89afde88f82b974f21c1f727a491e940d3a8",
+  "generator_sha256": "0b019f65470d830a2fb206d9473a8b545cb963efb09214686762403a90cfc6f1",
   "row_counts": {
     "regions": 6,
     "categories": 16,

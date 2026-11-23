@@ -20,8 +20,10 @@ def bi_descriptions() -> dict:
             "restricted": {t: set(c) for t, c in d.get("restricted", {}).items()}}
 
 
-def bi_sqlite_path(instance: str) -> Path:
-    return REPO_ROOT / "data" / "generated" / f"retailco_{instance}" / f"retailco_{instance}.sqlite"
+def bi_sqlite_path(instance: str, agent: bool = True) -> Path:
+    """Agents (and default callers) get the copy whose restricted columns hold NULL; evaluator gold never needs them."""
+    suffix = ".agent.sqlite" if agent else ".sqlite"
+    return REPO_ROOT / "data" / "generated" / f"retailco_{instance}" / f"retailco_{instance}{suffix}"
 
 
 def open_bi(instance: str = "dev", engine: str = "sqlite", sqlite_path: Path | None = None) -> Database:

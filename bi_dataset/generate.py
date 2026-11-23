@@ -495,6 +495,24 @@ def write_sqlite(T: dict[str, list[dict]], path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def write_agent_copy(src: Path, dst: Path) -> None:
+    """Agent-facing SQLite copy: restricted column values replaced by NULL (TOOLS.md L4 defense in depth).
+
+    The SQLite authorizer cannot see columns referenced through JOIN ... USING / NATURAL JOIN, so the values are
+    removed physically; the evaluator keeps using the full file.
+    """
+    import yaml
+
+    restricted = yaml.safe_load((PKG / "descriptions.yaml").read_text()).get("restricted", {})
+    shutil.copyfile(src, dst)
+    conn = sqlite3.connect(dst)
+    for table, cols in restricted.items():
+        conn.execute(f"UPDATE {table} SET " + ", ".join(f"{c} = NULL" for c in cols))
+    conn.commit()
+    conn.execute("VACUUM")
+    conn.close()
+
+
 def _sqlite_value(v):  # noqa: ANN001, ANN202
     if isinstance(v, bool):
         return 1 if v else 0
@@ -513,6 +531,7 @@ def build(instance: str, out: Path, disable: set[str] | None = None, events_path
     csv_hashes = write_csvs(T, out / "csv")
     db_path = out / f"retailco_{instance}.sqlite"
     write_sqlite(T, db_path)
+    write_agent_copy(db_path, out / f"retailco_{instance}.agent.sqlite")
     events_file = events_path or PKG / "events" / f"{instance}.json"
     manifest = {
         "instance": instance, "seed": inst.seed, "disabled_events": sorted(disable or []),

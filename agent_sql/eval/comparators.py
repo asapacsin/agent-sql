@@ -45,7 +45,7 @@ def to_number(v: Any) -> float | None:
     return None
 
 
-def close(pred: Any, gold: Any, rel_tol: float = 0.005, abs_tol: float = 0.01) -> bool:
+def close(pred: Any, gold: Any, rel_tol: float = 0.005, abs_tol: float = 0.01, ratio: bool = False) -> bool:
     p, g = to_number(pred), to_number(gold)
     if g is None:
         if gold is None:
@@ -55,8 +55,8 @@ def close(pred: Any, gold: Any, rel_tol: float = 0.005, abs_tol: float = 0.01) -
         return False
     if abs(p - g) <= max(abs_tol, rel_tol * abs(g)):
         return True
-    # percentages expressed as 0-100 vs fractions
-    return abs(g) <= 1.5 and abs(p / 100 - g) <= max(abs_tol / 100, rel_tol * abs(g))
+    # percentages expressed as 0-100 vs fractions: only for value columns declared as ratios
+    return ratio and abs(g) <= 1.5 and abs(p / 100 - g) <= max(abs_tol / 100, rel_tol * abs(g))
 
 
 def norm_key(v: Any) -> str:
@@ -101,7 +101,7 @@ def score_bi_result(spec: dict, pred_cols: list[str], pred_rows: list[tuple], go
             return Verdict(False, "empty result")
         if len(pred_rows) > 5:
             return Verdict(False, f"scalar answer returned {len(pred_rows)} rows")
-        hit = any(close(v, gold, vc["rel_tol"], vc["abs_tol"]) for v in pred_rows[0])
+        hit = any(close(v, gold, vc["rel_tol"], vc["abs_tol"], vc.get("ratio", False)) for v in pred_rows[0])
         return Verdict(hit, f"gold={gold} pred_first_row={list(pred_rows[0])[:6]}")
     if kind == "set":
         key = spec["key_columns"][0]
@@ -174,7 +174,7 @@ def _score_table(spec: dict, pred_cols: list[str], pred_rows: list[tuple], gold_
         for j in range(len(pred_cols)):
             if j in kmap:
                 continue
-            ok = sum(close(pred_index[k][j], g[gi], vc["rel_tol"], vc["abs_tol"]) for k, g in zip(gold_keys, gold_rows, strict=False))
+            ok = sum(close(pred_index[k][j], g[gi], vc["rel_tol"], vc["abs_tol"], vc.get("ratio", False)) for k, g in zip(gold_keys, gold_rows, strict=False))
             rate = ok / len(gold_keys)
             if rate > best_rate:
                 best_rate, best_j = rate, j
@@ -190,50 +190,81 @@ def _score_table(spec: dict, pred_cols: list[str], pred_rows: list[tuple], gold_
 
 # ----------------------------------------------------------------------------- answer-level types
 
+def _norm_entity(v: str) -> str:
+    return re.sub(r"[\s_\-]+", " ", str(v)).strip().lower()
+
+
 def _entities_match(claim_entities: list, wanted: list[dict]) -> bool:
-    have = {(e.type, e.value.strip().lower()) for e in claim_entities}
-    have_values = {v for _, v in have}
-    for w in wanted:
-        val = w["value"].strip().lower()
-        if (w["type"], val) not in have and val not in have_values \
-                and not any(val in v or v in val for v in have_values if len(v) > 3):
-            return False
-    return True
+    """Typed, exact (case/separator-insensitive) entity match: every wanted entity must be present."""
+    have = {(e.type, _norm_entity(e.value)) for e in claim_entities}
+    return all((w["type"], _norm_entity(w["value"])) in have for w in wanted)
+
+
+def _direction_of(claim) -> str | None:  # noqa: ANN001
+    down, up = bool(DOWN_WORDS.search(claim.text or "")), bool(UP_WORDS.search(claim.text or ""))
+    if down != up:
+        return "down" if down else "up"
+    return None
 
 
 def _direction_ok(claim, direction: str | None) -> bool:  # noqa: ANN001
     if direction is None:
         return True
-    words = DOWN_WORDS if direction == "down" else UP_WORDS
-    if words.search(claim.text or ""):
+    if _direction_of(claim) == direction:
         return True
     v = to_number(claim.value)
-    return v is not None and ((v < 0) if direction == "down" else (v > 0))
+    return _direction_of(claim) is None and v is not None and ((v < 0) if direction == "down" else (v > 0))
+
+
+def _finding_ok(f: dict, claim) -> bool:  # noqa: ANN001
+    if not _entities_match(claim.entities, f.get("entities", [])):
+        return False
+    if not _direction_ok(claim, f.get("direction")):
+        return False
+    if f.get("period") and not _entities_match(claim.entities, [{"type": "period", "value": f["period"]}]):
+        return False
+    v = to_number(claim.value)
+    if f.get("min_abs_effect") is not None and (v is None or abs(v) < float(f["min_abs_effect"])):
+        return False
+    return not (f.get("require_value") and not close(claim.value, f.get("gold_value")))
+
+
+def _contradicts(f: dict, claim) -> bool:  # noqa: ANN001
+    """A numeric claim about exactly the finding's entities that states the opposite direction, or (when the
+    finding carries an evaluator-computed gold value) a value outside tolerance."""
+    if not claim.is_numeric or not f.get("entities") or not _entities_match(claim.entities, f["entities"]):
+        return False
+    d = f.get("direction")
+    stated = _direction_of(claim)
+    if d and stated and stated != d:
+        return True
+    return bool(f.get("require_value") and f.get("gold_value") is not None and not close(claim.value, f["gold_value"]))
 
 
 def score_bi_diagnostic(spec: dict, answer: FinalAnswer, events: list[dict]) -> Verdict:
-    """Required findings matched against structured claims; numeric contradiction is checked only for findings
-    that declare require_value (with an evaluator-computed value in `finding['gold_value']`)."""
+    """BENCHMARK.md section 4.2 diagnostic rule: every required finding satisfied and no contradicted claim.
+
+    Event findings name {event_type, region?}; the evaluator resolves them to business_events ids and requires an
+    `event` entity EQUAL to one of those ids. Findings may add period, min_abs_effect and require_value (gold_value is
+    injected by the evaluator from the task's gold SQL)."""
     if answer.status != spec.get("expected_status", "ANSWERED"):
         return Verdict(False, f"status {answer.status}")
-    failed = []
+    failed, contradicted = [], []
     for f in spec["required_findings"]:
         if "event" in f:
             want = f["event"]
             ids = {str(e["event_id"]) for e in events if e["event_type"] == want["event_type"]
                    and (want.get("region") is None or e.get("region_name") == want["region"])}
-            types = {want["event_type"].lower(), want["event_type"].replace("_", " ").lower()}
-            ok = any(e.type == "event" and (e.value.strip() in ids or e.value.strip().lower() in types
-                                            or any(t in e.value.lower() for t in types))
-                     for c in answer.claims for e in c.entities)
+            ok = any(e.type == "event" and e.value.strip() in ids for c in answer.claims for e in c.entities)
         else:
-            ok = any(_entities_match(c.entities, f.get("entities", [])) and _direction_ok(c, f.get("direction"))
-                     and (not f.get("require_value") or close(c.value, f.get("gold_value")))
-                     for c in answer.claims)
+            ok = any(_finding_ok(f, c) for c in answer.claims)
+            contradicted += [c.claim_id for c in answer.claims if _contradicts(f, c)]
         if not ok:
             failed.append(f["id"])
     if spec.get("uncertainty_high") and answer.uncertainty.level != "high":
         failed.append("uncertainty_high")
+    if contradicted:
+        failed.append(f"contradicted:{sorted(set(contradicted))}")
     return Verdict(not failed, "all findings matched" if not failed else f"unmatched: {failed}")
 
 

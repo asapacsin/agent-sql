@@ -30,8 +30,8 @@ CREATE TABLE product_costs (
 CREATE TABLE customers (
   customer_id INTEGER PRIMARY KEY,
   customer_name TEXT NOT NULL,
-  email TEXT NOT NULL,
-  phone TEXT NOT NULL,
+  email TEXT,
+  phone TEXT,
   home_region_id INTEGER NOT NULL REFERENCES regions(region_id),
   segment TEXT NOT NULL,
   acquisition_channel TEXT NOT NULL,

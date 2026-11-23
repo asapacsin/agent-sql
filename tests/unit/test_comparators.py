@@ -20,7 +20,7 @@ def test_bird_set_semantics():
 
 def test_tolerance_and_percent_forms():
     assert close(100.4, 100.0) and not close(101.0, 100.0)
-    assert close("38.2%", 0.382) and close(38.2, 0.382)
+    assert close("38.2%", 0.382) and close(38.2, 0.382, ratio=True)
 
 
 def test_scalar_any_column_first_row():
@@ -77,3 +77,49 @@ def test_insufficient():
     assert score_bi_insufficient({}, FinalAnswer(status="INSUFFICIENT_DATA")).passed
     fab = FinalAnswer(status="ANSWERED", limitations=["no data"], claims=[Claim(claim_id="c", text="ROI", value=3.2)])
     assert not score_bi_insufficient({}, fab).passed
+
+
+def test_percent_fallback_only_for_ratio_columns():
+    assert not close(100, 1) and not close(50, 0.5)
+    assert close(38.2, 0.382, ratio=True)
+
+
+def test_event_requires_event_id_equality():
+    spec = {"type": "diagnostic", "expected_status": "ANSWERED", "required_findings": [
+        {"id": "f2", "event": {"event_type": "stockout", "region": "West"}}]}
+    events = [{"event_id": 1, "event_type": "stockout", "region_name": "West"}]
+    by_text = FinalAnswer(status="ANSWERED", claims=[Claim(claim_id="c", text="stockout",
+                                                          entities=[Entity(type="event", value="stockout")])])
+    assert not score_bi_diagnostic(spec, by_text, events).passed
+
+
+def test_entity_match_is_typed_and_exact():
+    spec = {"type": "diagnostic", "expected_status": "ANSWERED", "required_findings": [
+        {"id": "f1", "entities": [{"type": "region", "value": "West"}], "direction": "down"}]}
+    sw = FinalAnswer(status="ANSWERED", claims=[Claim(claim_id="c", text="declined", value=-5,
+                                                     entities=[Entity(type="region", value="Southwest")])])
+    wrong_type = FinalAnswer(status="ANSWERED", claims=[Claim(claim_id="c", text="declined", value=-5,
+                                                             entities=[Entity(type="segment", value="West")])])
+    assert not score_bi_diagnostic(spec, sw, []).passed
+    assert not score_bi_diagnostic(spec, wrong_type, []).passed
+
+
+def test_contradicted_claim_fails():
+    spec = {"type": "diagnostic", "expected_status": "ANSWERED", "required_findings": [
+        {"id": "f1", "entities": [{"type": "region", "value": "West"}], "direction": "down"}]}
+    both = FinalAnswer(status="ANSWERED", claims=[
+        Claim(claim_id="c1", text="West revenue declined", value=-5, entities=[Entity(type="region", value="West")]),
+        Claim(claim_id="c2", text="West revenue increased", value=7, entities=[Entity(type="region", value="West")])])
+    v = score_bi_diagnostic(spec, both, [])
+    assert not v.passed and "contradicted" in v.detail
+
+
+def test_require_value_uses_gold_value():
+    spec = {"type": "diagnostic", "expected_status": "ANSWERED", "required_findings": [
+        {"id": "f1", "entities": [{"type": "region", "value": "West"}], "direction": "down", "require_value": True,
+         "gold_value": -100.0}]}
+    ok = FinalAnswer(status="ANSWERED", claims=[Claim(claim_id="c", text="fell", value=-100.2,
+                                                     entities=[Entity(type="region", value="west")])])
+    off = FinalAnswer(status="ANSWERED", claims=[Claim(claim_id="c", text="fell", value=-50,
+                                                      entities=[Entity(type="region", value="west")])])
+    assert score_bi_diagnostic(spec, ok, []).passed and not score_bi_diagnostic(spec, off, []).passed

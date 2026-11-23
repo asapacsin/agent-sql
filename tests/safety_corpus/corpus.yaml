@@ -53,6 +53,9 @@ reject:
   - {sql: "SeLeCt 1; dRoP tAbLe orders", rule: SR2}
   - {sql: "", rule: SR1}
   - {sql: "SELEC order_id FROM orders", rule: SR1}
+  - {sql: "SELECT customer_id FROM customers JOIN (SELECT 'a@example.com' AS email) x USING (email)", rule: SR8}
+  - {sql: "SELECT customer_id FROM customers NATURAL JOIN (SELECT '555-1' AS phone) x", rule: SR8}
+  - {sql: "SELECT COUNT(*) FROM customers c JOIN customers d USING (email)", rule: SR8}
 pass:
   - "SELECT order_id, status FROM orders WHERE status IN ('shipped', 'completed')"
   - "SELECT 1"

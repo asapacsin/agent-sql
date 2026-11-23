@@ -721,6 +721,29 @@
         ],
         "effect": "reduces author-bias risk R05"
       }
+    },
+    {
+      "id": "h-approve-spec-amendments",
+      "owner": "HUMAN_DECISION",
+      "status": "HUMAN_REQUIRED",
+      "priority": 5,
+      "action": "Owner reviews docs/spec/CHANGELOG.md v0.1.1 amendments A1-A8 and approves or rejects each",
+      "depends_on": [
+        "p0-spec"
+      ],
+      "phase": 1,
+      "automation_blocker": "Changing the approved specification is an owner decision",
+      "procedure": "Read docs/spec/CHANGELOG.md; approve all, or name the amendments to revert",
+      "pass_criteria": "Decision recorded for each amendment A1-A8",
+      "expected_return": "approve all / revert list",
+      "quantified": {
+        "options": [
+          "approve A1-A8",
+          "approve with reverts (list)",
+          "reject all: restore v0.1.0 wording, original D3 and remove CI job"
+        ],
+        "cost_of_rejecting_A2": "dev instance regenerated; D3 diagnostic tasks may become unanswerable"
+      }
     }
   ]
 }

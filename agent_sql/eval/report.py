@@ -81,7 +81,9 @@ def summarize(scores: list[dict]) -> dict:
             "M12_flip_rate": (sum(1 for v in per_task.values() if len(set(v)) > 1) / len(per_task))
             if len(runs) > 1 else float("nan"),
             "S01_grounded_claim_rate": (sum(s["grounded_claims"] for s in items) / numeric) if numeric else float("nan"),
-            "S04_abstention_on_insufficient": _rate([s["abstained"] for s in items if s["task_type"] == "insufficient"]),
+            "S04_abstention_on_insufficient": _rate([s["success"] for s in items if s["task_type"] == "insufficient"]),
+            "S04_false_abstention_on_answerable": _rate([s["abstained"] for s in items
+                                                         if s["task_type"] != "insufficient"]),
             "S05_silent_wrong": _rate([s["silent_wrong"] for s in items]),
             "S06_self_service": _rate([s["self_service"] for s in items if s["dataset"] == "bi"]),
             "failure_codes": dict(Counter(s["failure_code"] for s in items if s["failure_code"])),
@@ -139,13 +141,14 @@ def render(scores: list[dict], manifest: dict | None = None) -> tuple[str, list[
                      f"{r['M07_latency_p50']:.2f} | {r['M07_latency_p90']:.2f} | {r['M08_input_tokens_mean']:.0f} | "
                      f"{r['M08_output_tokens_mean']:.0f} | {r['M09_cost_mean_usd']:.4f} | {r['M10_cost_per_success_usd']:.4f} |")
     lines += ["", "## Recovery, reliability, grounding", "",
-              "| system | dataset | M04 recov→exec | M04 recov→success | M12 SD | M12 pass^k | M12 flip | S01 grounded | S04 abstain | S06 self-service |",
-              "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
+              "| system | dataset | M04 recov→exec | M04 recov→success | M12 SD | M12 pass^k | M12 flip | S01 grounded | S04 correct abstain | S04 false abstain | S06 self-service |",
+              "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
     for r in rows.values():
         lines.append(f"| {r['system']} | {r['dataset']} | {_fmt_rate(r['M04_recovery_exec'])} | "
                      f"{_fmt_rate(r['M04_recovery_success'])} | {r['M12_success_sd_across_runs']:.3f} | "
                      f"{r['M12_pass_all_runs']:.3f} | {r['M12_flip_rate']:.3f} | {r['S01_grounded_claim_rate']:.3f} | "
-                     f"{_fmt_rate(r['S04_abstention_on_insufficient'])} | {_fmt_rate(r['S06_self_service'])} |")
+                     f"{_fmt_rate(r['S04_abstention_on_insufficient'])} | {_fmt_rate(r['S04_false_abstention_on_answerable'])} | "
+                     f"{_fmt_rate(r['S06_self_service'])} |")
     systems = {s["system_id"] for s in scores}
     comps = [(h, a, b) for h, a, b in PRIMARY_PAIRS + SECONDARY_PAIRS if a in systems and b in systems]
     if comps:

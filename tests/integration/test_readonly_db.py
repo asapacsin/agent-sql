@@ -72,3 +72,18 @@ def test_results_identical_across_engines(bi_dev_sqlite, bi_dev_postgres):
     a = Executor(bi_dev_sqlite, statement_timeout_s=30, max_rows=100).run(sql, ResultStore()).result.rows
     b = Executor(bi_dev_postgres, statement_timeout_s=30, max_rows=100).run(sql, ResultStore()).result.rows
     assert [(s, n, round(float(g), 2)) for s, n, g in a] == [(s, n, round(float(g), 2)) for s, n, g in b]
+
+
+def test_restricted_values_not_reachable_via_using_on_sqlite(bi_dev_sqlite):
+    """Reviewer finding: SQLite's authorizer does not see USING/NATURAL columns. L1 rejects them, and the agent-facing
+    SQLite copy holds NULL in restricted columns, so even with L1 disabled no equality oracle exists."""
+    ex = Executor(bi_dev_sqlite, statement_timeout_s=5, max_rows=10, validate=False)
+    store = ResultStore()
+    oracle = ex.run("SELECT customer_id FROM customers JOIN (SELECT 'alex.smith1@example.com' AS email) x "
+                    "USING (email)", store)
+    assert not oracle.ok or oracle.result.rows == []
+    natural = ex.run("SELECT COUNT(*) FROM customers c JOIN customers d USING (email)", store)
+    assert not natural.ok or natural.result.rows == [(0,)]
+    checked = Executor(bi_dev_sqlite, statement_timeout_s=5, max_rows=10).run(
+        "SELECT customer_id FROM customers NATURAL JOIN (SELECT 'x' AS phone) x", store)
+    assert checked.status == "REJECTED"
