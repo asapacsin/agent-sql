@@ -1,0 +1,230 @@
+# Machine form of docs/spec/DATA_MODEL.md section 4 (single owner of metric semantics).
+# - `definition` + `formula` are rendered into the glossary given to ALL systems.
+# - `template` (canonical SQL; {start}/{end} half-open period) is used ONLY by the A2 verifier (V3) and gold-sanity
+#   tests. Templates are written from DATA_MODEL definitions on the dev instance, never from gold task SQL.
+recognized_lines: >-
+  RL = order_items joined to orders and customers where orders.status IN ('shipped','completed') and
+  customers.is_test_account = false; period filters apply to orders.order_date (half-open [start, end)).
+metrics:
+  - id: gross_revenue
+    name: Gross revenue
+    aliases: [gross sales]
+    unit: USD
+    definition: Sum over recognized lines of quantity * unit_price.
+    formula: SUM(quantity * unit_price) over RL
+    required_tables: [order_items, orders, customers]
+    required_predicates: ["orders.status IN ('shipped', 'completed')", "customers.is_test_account = FALSE"]
+    template: &rl_gross |
+      SELECT SUM(oi.quantity * oi.unit_price) AS value
+      FROM order_items oi JOIN orders o ON o.order_id = oi.order_id JOIN customers c ON c.customer_id = o.customer_id
+      WHERE o.status IN ('shipped', 'completed') AND c.is_test_account = FALSE
+        AND o.order_date >= '{start}' AND o.order_date < '{end}'
+  - id: discounts
+    name: Discounts
+    aliases: []
+    unit: USD
+    definition: Sum over recognized lines of discount_amount (line-level total discount).
+    formula: SUM(discount_amount) over RL
+    required_tables: [order_items, orders, customers]
+    required_predicates: ["orders.status IN ('shipped', 'completed')", "customers.is_test_account = FALSE"]
+    template: |
+      SELECT SUM(oi.discount_amount) AS value
+      FROM order_items oi JOIN orders o ON o.order_id = oi.order_id JOIN customers c ON c.customer_id = o.customer_id
+      WHERE o.status IN ('shipped', 'completed') AND c.is_test_account = FALSE
+        AND o.order_date >= '{start}' AND o.order_date < '{end}'
+  - id: refunds
+    name: Refunds
+    aliases: [returns value]
+    unit: USD
+    definition: Sum of returns.refund_amount for returns of recognized lines, attributed to the original order's order_date.
+    formula: SUM(returns.refund_amount) for RL lines, order-date basis
+    required_tables: [returns, order_items, orders, customers]
+    required_predicates: ["orders.status IN ('shipped', 'completed')", "customers.is_test_account = FALSE"]
+    template: |
+      SELECT SUM(r.refund_amount) AS value
+      FROM returns r JOIN order_items oi ON oi.order_item_id = r.order_item_id JOIN orders o ON o.order_id = oi.order_id
+      JOIN customers c ON c.customer_id = o.customer_id
+      WHERE o.status IN ('shipped', 'completed') AND c.is_test_account = FALSE
+        AND o.order_date >= '{start}' AND o.order_date < '{end}'
+  - id: net_revenue
+    name: Net revenue
+    aliases: [revenue, sales]
+    unit: USD
+    definition: Gross revenue minus discounts minus refunds. Unqualified "revenue" means net revenue.
+    formula: gross_revenue - discounts - refunds
+    required_tables: [order_items, orders, customers, returns]
+    required_predicates: ["orders.status IN ('shipped', 'completed')", "customers.is_test_account = FALSE"]
+    template: |
+      WITH rl AS (
+        SELECT oi.order_item_id, oi.quantity, oi.unit_price, oi.discount_amount
+        FROM order_items oi JOIN orders o ON o.order_id = oi.order_id JOIN customers c ON c.customer_id = o.customer_id
+        WHERE o.status IN ('shipped', 'completed') AND c.is_test_account = FALSE
+          AND o.order_date >= '{start}' AND o.order_date < '{end}'),
+      r AS (SELECT order_item_id, SUM(refund_amount) AS refund FROM returns GROUP BY order_item_id)
+      SELECT SUM(rl.quantity * rl.unit_price - rl.discount_amount - COALESCE(r.refund, 0)) AS value
+      FROM rl LEFT JOIN r ON r.order_item_id = rl.order_item_id
+  - id: cogs
+    name: Cost of goods sold
+    aliases: [cost of goods sold, cost]
+    unit: USD
+    definition: Sum over recognized lines of (quantity - returned_quantity) * unit_cost, where unit_cost is the product_costs row whose [effective_from, effective_to) contains order_date.
+    formula: SUM((quantity - returned_quantity) * unit_cost_at(order_date)) over RL
+    required_tables: [order_items, orders, customers, product_costs, returns]
+    required_predicates: ["orders.status IN ('shipped', 'completed')", "customers.is_test_account = FALSE"]
+    template: |
+      WITH rl AS (
+        SELECT oi.order_item_id, oi.product_id, oi.quantity, o.order_date
+        FROM order_items oi JOIN orders o ON o.order_id = oi.order_id JOIN customers c ON c.customer_id = o.customer_id
+        WHERE o.status IN ('shipped', 'completed') AND c.is_test_account = FALSE
+          AND o.order_date >= '{start}' AND o.order_date < '{end}'),
+      r AS (SELECT order_item_id, SUM(quantity_returned) AS qret FROM returns GROUP BY order_item_id)
+      SELECT SUM((rl.quantity - COALESCE(r.qret, 0)) * pc.unit_cost) AS value
+      FROM rl LEFT JOIN r ON r.order_item_id = rl.order_item_id
+      JOIN product_costs pc ON pc.product_id = rl.product_id AND pc.effective_from <= rl.order_date
+        AND (pc.effective_to IS NULL OR rl.order_date < pc.effective_to)
+  - id: gross_profit
+    name: Gross profit
+    aliases: [profit]
+    unit: USD
+    definition: Net revenue minus COGS. Unqualified "profit" means gross profit; operating profit cannot be computed (no opex data).
+    formula: net_revenue - cogs
+    required_tables: [order_items, orders, customers, returns, product_costs]
+    required_predicates: ["orders.status IN ('shipped', 'completed')", "customers.is_test_account = FALSE"]
+    template: null
+  - id: gross_margin
+    name: Gross margin
+    aliases: [margin]
+    unit: ratio
+    definition: Gross profit divided by net revenue; NULL when net revenue is 0.
+    formula: gross_profit / net_revenue
+    required_tables: [order_items, orders, customers, returns, product_costs]
+    required_predicates: ["orders.status IN ('shipped', 'completed')", "customers.is_test_account = FALSE"]
+    template: null
+  - id: orders
+    name: Orders
+    aliases: [order count, number of orders]
+    unit: count
+    definition: Count of distinct recognized orders (status shipped or completed, non-test customer).
+    formula: COUNT(DISTINCT order_id) over recognized orders
+    required_tables: [orders, customers]
+    required_predicates: ["orders.status IN ('shipped', 'completed')", "customers.is_test_account = FALSE"]
+    template: |
+      SELECT COUNT(DISTINCT o.order_id) AS value FROM orders o JOIN customers c ON c.customer_id = o.customer_id
+      WHERE o.status IN ('shipped', 'completed') AND c.is_test_account = FALSE
+        AND o.order_date >= '{start}' AND o.order_date < '{end}'
+  - id: aov
+    name: Average order value
+    aliases: [average order value, AOV]
+    unit: USD
+    definition: Net revenue divided by orders.
+    formula: net_revenue / orders
+    required_tables: [order_items, orders, customers, returns]
+    required_predicates: ["orders.status IN ('shipped', 'completed')", "customers.is_test_account = FALSE"]
+    template: null
+  - id: units_sold
+    name: Units sold
+    aliases: [units]
+    unit: count
+    definition: Sum over recognized lines of quantity minus returned quantity.
+    formula: SUM(quantity - returned_quantity) over RL
+    required_tables: [order_items, orders, customers, returns]
+    required_predicates: ["orders.status IN ('shipped', 'completed')", "customers.is_test_account = FALSE"]
+    template: null
+  - id: return_rate
+    name: Return rate
+    aliases: []
+    unit: ratio
+    definition: Sum of quantity_returned divided by sum of quantity over recognized lines.
+    formula: SUM(quantity_returned) / SUM(quantity) over RL
+    required_tables: [order_items, orders, customers, returns]
+    required_predicates: ["orders.status IN ('shipped', 'completed')", "customers.is_test_account = FALSE"]
+    template: null
+  - id: active_customers
+    name: Active customers
+    aliases: []
+    unit: count
+    definition: Distinct non-test customers with at least one recognized order in the period.
+    formula: COUNT(DISTINCT customer_id) over recognized orders in period
+    required_tables: [orders, customers]
+    required_predicates: ["orders.status IN ('shipped', 'completed')", "customers.is_test_account = FALSE"]
+    template: |
+      SELECT COUNT(DISTINCT o.customer_id) AS value FROM orders o JOIN customers c ON c.customer_id = o.customer_id
+      WHERE o.status IN ('shipped', 'completed') AND c.is_test_account = FALSE
+        AND o.order_date >= '{start}' AND o.order_date < '{end}'
+  - id: new_customers
+    name: New customers
+    aliases: []
+    unit: count
+    definition: Non-test customers whose first recognized order date falls in the period.
+    formula: COUNT(customers with MIN(recognized order_date) in period)
+    required_tables: [orders, customers]
+    required_predicates: ["orders.status IN ('shipped', 'completed')", "customers.is_test_account = FALSE"]
+    template: null
+  - id: retention_mom
+    name: Monthly retention
+    aliases: [retention]
+    unit: ratio
+    definition: For month M, the share of customers active in month M-1 who are also active in month M. Unqualified "retention" means this.
+    formula: "|active(M-1) ∩ active(M)| / |active(M-1)|"
+    required_tables: [orders, customers]
+    required_predicates: ["orders.status IN ('shipped', 'completed')", "customers.is_test_account = FALSE"]
+    template: null
+  - id: churn_mom
+    name: Monthly churn
+    aliases: [churn]
+    unit: ratio
+    definition: One minus monthly retention.
+    formula: 1 - retention_mom
+    required_tables: [orders, customers]
+    required_predicates: ["orders.status IN ('shipped', 'completed')", "customers.is_test_account = FALSE"]
+    template: null
+  - id: purchase_frequency
+    name: Purchase frequency
+    aliases: []
+    unit: orders per 30 days
+    definition: Recognized orders per customer per 30 days in a window.
+    formula: orders_in_window / (window_days / 30)
+    required_tables: [orders, customers]
+    required_predicates: ["orders.status IN ('shipped', 'completed')", "customers.is_test_account = FALSE"]
+    template: null
+  - id: declining_frequency_customer
+    name: Customer with declining purchase frequency
+    aliases: [customers with declining purchase frequency]
+    unit: customer
+    definition: Non-test customer with at least 3 recognized orders in W1 = 2025-01-01..2025-06-30 and orders(W2) <= 0.5 * orders(W1), W2 = 2025-07-01..2025-12-31.
+    formula: orders(W1) >= 3 AND orders(W2) <= 0.5 * orders(W1)
+    required_tables: [orders, customers]
+    required_predicates: ["orders.status IN ('shipped', 'completed')", "customers.is_test_account = FALSE"]
+    template: null
+  - id: growth_rate
+    name: Growth rate
+    aliases: [growth, change percent]
+    unit: ratio
+    definition: (value(P) - value(P_prior)) / value(P_prior); NULL when value(P_prior) = 0. Default P_prior is the immediately preceding period of the same length (QoQ for quarters, MoM for months); YoY only when asked. State the basis used.
+    formula: (value(P) - value(P_prior)) / value(P_prior)
+    required_tables: []
+    required_predicates: []
+    template: null
+  - id: absolute_change
+    name: Absolute change
+    aliases: [decline, increase]
+    unit: same as metric
+    definition: value(P) - value(P_prior). "Largest decline" ranks by absolute change unless percent or rate is asked; state which was used.
+    formula: value(P) - value(P_prior)
+    required_tables: []
+    required_predicates: []
+    template: null
+  - id: revenue_share
+    name: Revenue share
+    aliases: [share, mix]
+    unit: ratio
+    definition: Net revenue of a segment divided by total net revenue for the same period.
+    formula: net_revenue(segment) / net_revenue(total)
+    required_tables: [order_items, orders, customers, returns]
+    required_predicates: ["orders.status IN ('shipped', 'completed')", "customers.is_test_account = FALSE"]
+    template: null
+attribution:
+  region: orders.ship_region_id; NULL -> 'Unassigned'. Customer-level metrics (retention, active customers) use customers.home_region_id.
+  category: products.category_id; department is the category's parent.
+  time: orders.order_date (refunds on order-date basis). Calendar quarters; fiscal year = calendar year; half-open periods.
+  as_of: as_of_date 2026-01-01; "last quarter" = 2025-Q4; "last month" = 2025-12; a month name without a year = its most recent completed occurrence.
