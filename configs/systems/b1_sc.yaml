@@ -1,0 +1,7 @@
+# AB8 compute-matched self-consistency control. `samples` is calibrated in E0 (p4-a2-val) so median tokens
+# per task match A1 within +/-15%; the value below is the pre-calibration placeholder and must be updated with evidence.
+system_id: b1_sc
+kind: b1_sc
+prompts: {sql: b1/sql.v1.md, composer: shared/composer.v1.md}
+b1_top_k_tables: 5
+flags: {samples: 5, calibrated: false}

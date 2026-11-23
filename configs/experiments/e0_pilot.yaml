@@ -1,0 +1,9 @@
+# E0 pilot and calibration on validation splits (docs/spec/EXPERIMENTS.md section 1)
+experiment_id: e0_pilot
+datasets: [{dataset: bird, split: val}, {dataset: bi, split: val}]
+systems: [b0, b1, a1, a2, b1_sc]
+runs: 1
+bi_engine: postgres
+llm: {mode: record}
+concurrency: 4
+max_experiment_usd: 200.0

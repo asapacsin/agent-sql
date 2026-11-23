@@ -11,6 +11,44 @@ from agent_sql.eval.stats import holm, mcnemar_exact, paired_bootstrap_diff, wil
 
 PRIMARY_PAIRS = [("H1", "a1", "b1"), ("H2", "a2", "a1"), ("H3", "a2", "b0")]
 SECONDARY_PAIRS = [("H6", "b1", "b0"), ("H5", "a1", "b1_sc")]
+# (ablation id, base system, ablated system): delta = base - ablated (docs/spec/EXPERIMENTS.md section 5)
+ABLATIONS = [("AB1", "b1", "b0"), ("AB2-full", "a1", "a1_full_schema"), ("AB2-names", "a1", "a1_names_only"),
+             ("AB3", "a1", "a1_noexplore"), ("AB4", "a1", "a1_feedback_binary"), ("AB5-r0", "a1", "a1_repair0"),
+             ("AB5-r1", "a1", "a1_repair1"), ("AB6", "a2", "a2_noplan"), ("AB7", "a2", "a2_noverify"),
+             ("AB8", "a1", "b1_sc"), ("AB9-low", "a2", "a2_effort_low"), ("AB9-high", "a2", "a2_effort_high")]
+
+
+def ablation(scores: list[dict], base: str, ablated: str) -> dict | None:
+    """Decision rule: effective / harmful / cost-only / inconclusive from paired bootstrap CIs."""
+    def per_task(sid: str, key: str) -> dict[str, float]:
+        acc = defaultdict(list)
+        for s in scores:
+            if s["system_id"] == sid:
+                acc[s["task_id"]].append(float(s[key]))
+        return {t: sum(v) / len(v) for t, v in acc.items()}
+
+    sb, sa = per_task(base, "success"), per_task(ablated, "success")
+    common = sorted(set(sb) & set(sa))
+    if not common:
+        return None
+    d_succ = paired_bootstrap_diff([sb[t] for t in common], [sa[t] for t in common])
+    cb, ca = per_task(base, "cost_usd"), per_task(ablated, "cost_usd")
+    lb, la = per_task(base, "latency_s"), per_task(ablated, "latency_s")
+    d_cost = paired_bootstrap_diff([cb[t] for t in common], [ca[t] for t in common])
+    d_lat = paired_bootstrap_diff([lb[t] for t in common], [la[t] for t in common])
+    if d_succ[1] > 0:
+        label = "effective"
+    elif d_succ[2] < 0:
+        label = "harmful"
+    elif d_cost[1] > 0 or d_lat[1] > 0:
+        label = "cost-only"
+    else:
+        label = "inconclusive"
+    extra = sum(sb[t] for t in common) - sum(sa[t] for t in common)
+    extra_cost = sum(cb[t] for t in common) - sum(ca[t] for t in common)
+    return {"base": base, "ablated": ablated, "n": len(common), "d_success": d_succ, "d_cost": d_cost,
+            "d_latency": d_lat, "classification": label,
+            "marginal_cost_per_extra_success": (extra_cost / extra) if extra > 0 else None}
 
 
 def _rate(xs: list[bool]) -> tuple[float, float, float, int]:
@@ -167,6 +205,19 @@ def render(scores: list[dict], manifest: dict | None = None) -> tuple[str, list[
                 lines.append(f"| {h} | {r['a']} | {r['b']} | {r['n_tasks']} | {r['delta_M03']:+.3f} "
                              f"[{r['ci'][0]:+.3f}, {r['ci'][1]:+.3f}] | {r['a_only']} | {r['b_only']} | "
                              f"{r['p_value']:.4f} | {adj.get(h, float('nan')):.4f} |")
+    abl = [(aid, ablation(scores, base, abl_sid)) for aid, base, abl_sid in ABLATIONS
+           if base in systems and abl_sid in systems]
+    abl = [(aid, r) for aid, r in abl if r]
+    if abl:
+        lines += ["", "## Ablations (Δ = base − ablated; paired bootstrap 95% CI)", "",
+                  "| id | base | ablated | n | Δ success | Δ cost $ | Δ latency s | class | $/extra success |",
+                  "| --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
+        for aid, r in abl:
+            ds, dc, dl = r["d_success"], r["d_cost"], r["d_latency"]
+            mc = "n/a" if r["marginal_cost_per_extra_success"] is None else f"{r['marginal_cost_per_extra_success']:.4f}"
+            lines.append(f"| {aid} | {r['base']} | {r['ablated']} | {r['n']} | {ds[0]:+.3f} [{ds[1]:+.3f}, {ds[2]:+.3f}] | "
+                         f"{dc[0]:+.4f} [{dc[1]:+.4f}, {dc[2]:+.4f}] | {dl[0]:+.2f} [{dl[1]:+.2f}, {dl[2]:+.2f}] | "
+                         f"{r['classification']} | {mc} |")
     lines += ["", "## Failure codes (auto; UNLABELED requires hand labeling in E7)", ""]
     codes = sorted({c for r in rows.values() for c in r["failure_codes"]})
     if codes:

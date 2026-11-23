@@ -1,0 +1,10 @@
+# AB9 (exploratory, optional): effort sweep for A2
+experiment_id: e2_effort
+datasets: [{dataset: bird, split: test}, {dataset: bi, split: test}]
+systems: [a2_effort_low, a2_effort_high]
+runs: 1
+bi_engine: postgres
+llm: {mode: record}
+concurrency: 4
+max_experiment_usd: 600.0
+exploratory: true

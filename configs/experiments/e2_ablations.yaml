@@ -1,0 +1,9 @@
+# E2 ablations AB2-AB8 (AB1 = B0 vs B1 from E1). AB9 effort variants are optional (e2_effort.yaml).
+experiment_id: e2_ablations
+datasets: [{dataset: bird, split: test}, {dataset: bi, split: test}]
+systems: [a1_full_schema, a1_names_only, a1_noexplore, a1_feedback_binary, a1_repair0, a1_repair1, a2_noplan, a2_noverify, b1_sc]
+runs: 3
+bi_engine: postgres
+llm: {mode: record}
+concurrency: 4
+max_experiment_usd: 3500.0  # replace with the owner-approved cap (h-approve-budget)

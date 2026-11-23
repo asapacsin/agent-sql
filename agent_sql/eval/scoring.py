@@ -16,9 +16,8 @@ from agent_sql.eval.comparators import (
 from agent_sql.eval.datasets.bi import EvalTask
 from agent_sql.eval.failure_taxonomy import auto_failure_code
 from agent_sql.systems.contracts import FinalAnswer, RunResult
-from agent_sql.verification.grounding import check_grounding
 
-POSTHOC_CHECKS_VERSION = "v1:V1,V6,V7"  # V2-V5,V8 join in Phase 4
+POSTHOC_CHECKS_VERSION = "v2:V1-V8 (V3,V4 N/A post hoc)"
 
 
 def tables_in(sql: str, dialect: str) -> set[str]:
@@ -169,27 +168,30 @@ class Scorer:
                 tables_exact = pt == gt
                 tables_p = tp / len(pt) if pt else 0.0
                 tables_r = tp / len(gt)
-        # post-hoc validation V1, V6, V7 (same code for every system)
-        checks = []
+        # post-hoc validation V1-V8: the SAME check code for every system (M11). Plan periods are not part of the
+        # prediction, so V3/V4 report N/A post hoc; A2's in-loop report is kept separately in answer.validation.
+        from agent_sql.verification.checks import CheckInput, QueryView, run_checks
+
+        views = {}
+        for q in pred.queries:
+            if q["status"] == "OK":
+                r = self._exec(task.db_id, q["sql"])
+                views[q["query_id"]] = QueryView(q["query_id"], q["sql"], "OK" if r.ok else r.status,
+                                                 r.result.columns if r.ok else [], r.result.rows if r.ok else [],
+                                                 bool(r.ok and r.result.truncated))
+            else:
+                views[q["query_id"]] = QueryView(q["query_id"], q["sql"], q["status"])
+        report = run_checks(CheckInput(ans, views, dialect, task.dataset == "bi"))
+        checks = [c.model_dump() for c in report.checks]
+        from agent_sql.verification.grounding import check_grounding
 
         def lookup(qid: str, row: int, col: str):  # noqa: ANN202
-            q = queries.get(qid)
-            if not q or q["status"] != "OK":
+            v = views.get(qid)
+            if not v or v.status != "OK" or col not in v.columns or not 0 <= row < len(v.rows):
                 return False, None
-            r = self._exec(task.db_id, q["sql"])
-            if not r.ok or col not in r.result.columns or not (0 <= row < len(r.result.rows)):
-                return False, None
-            return True, r.result.rows[row][r.result.columns.index(col)]
+            return True, v.rows[row][v.columns.index(col)]
 
-        v1, bad = check_grounding(ans.claims, lookup)
-        checks.append(v1.model_dump())
-        if ans.status == "ANSWERED":
-            checks.append({"id": "V6", "result": "FAIL" if executed and not rec.result.rows else "PASS",
-                           "detail": "final result empty" if executed and not rec.result.rows else ""})
-            trunc = bool(executed and rec.result.truncated)
-            disclosed = any("trunc" in x.lower() for x in ans.limitations)
-            checks.append({"id": "V7", "result": "FAIL" if trunc and not disclosed else ("WARN" if trunc else "PASS"),
-                           "detail": ""})
+        _, bad = check_grounding(ans.claims, lookup)
         validation_failed = any(c["result"] == "FAIL" for c in checks)
         numeric = [c for c in ans.claims if c.is_numeric]
         abstained = ans.status == "INSUFFICIENT_DATA"

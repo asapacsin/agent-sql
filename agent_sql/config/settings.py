@@ -84,6 +84,7 @@ class SystemConfig(Strict):
     b1_top_k_tables: int | None = None
     budgets: AgentBudgets | None = None
     flags: dict[str, Any] = {}
+    effort: Literal["low", "medium", "high", "xhigh", "max"] | None = None  # AB9 only; default = models.yaml
 
 
 def load_yaml(path: Path) -> dict:

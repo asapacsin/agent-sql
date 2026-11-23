@@ -1,0 +1,10 @@
+# E4 (exploratory): BI test on the SQLite mirror
+experiment_id: e4_cross_engine
+datasets: [{dataset: bi, split: test}]
+systems: [b0, a2]
+runs: 1
+bi_engine: sqlite
+llm: {mode: record}
+concurrency: 4
+max_experiment_usd: 80.0
+exploratory: true

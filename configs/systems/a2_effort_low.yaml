@@ -1,0 +1,24 @@
+# Ablation variant of a2 (docs/spec/EXPERIMENTS.md section 5)
+system_id: a2_effort_low
+kind: a2
+prompts:
+  plan: a2/plan.v1.md
+  system: a2/system.v1.md
+budgets:
+  max_llm_calls: 24
+  max_tool_calls: 30
+  max_input_tokens: 400000
+  max_repair_attempts: 3
+  final_answer_reserve_tokens: 20000
+  max_failures_per_task: 6
+  max_plan_steps: 5
+  max_replans: 1
+  max_verification_queries: 4
+flags:
+  schema_context: retrieved
+  exploration_tools: 'on'
+  execution_feedback: full
+  repair_budget: 3
+  planning: 'on'
+  verification: 'on'
+effort: low

@@ -1,0 +1,16 @@
+# Ablation variant of a1 (docs/spec/EXPERIMENTS.md section 5)
+system_id: a1_noexplore
+kind: a1
+prompts:
+  system: a1/system.v1.md
+budgets:
+  max_llm_calls: 12
+  max_tool_calls: 15
+  max_input_tokens: 200000
+  max_repair_attempts: 3
+  final_answer_reserve_tokens: 20000
+flags:
+  schema_context: retrieved
+  exploration_tools: 'off'
+  execution_feedback: full
+  repair_budget: 3

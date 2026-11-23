@@ -1,0 +1,9 @@
+# E1 main comparison: 4 systems x 200 test tasks x 3 runs. Requires preregistration + approved budget.
+experiment_id: e1_main
+datasets: [{dataset: bird, split: test}, {dataset: bi, split: test}]
+systems: [b0, b1, a1, a2]
+runs: 3
+bi_engine: postgres
+llm: {mode: record}
+concurrency: 4
+max_experiment_usd: 950.0  # replace with the owner-approved cap (h-approve-budget)

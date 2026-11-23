@@ -194,7 +194,8 @@ class Runner:
             run_index, task, sid = item
             if state["stop"]:
                 return None
-            rt = Runtime(self.db(task.db_id), self.llm, self.model, self.limits, self.pricing, trace_dir,
+            model = self.model if not sys_cfgs[sid].effort else self.model.model_copy(update={"effort": sys_cfgs[sid].effort})
+            rt = Runtime(self.db(task.db_id), self.llm, model, self.limits, self.pricing, trace_dir,
                          fault_hook=transient_fault_once() if task.task_id in fm1 else None)
             system = build_system(rt, sys_cfgs[sid])
             try:
