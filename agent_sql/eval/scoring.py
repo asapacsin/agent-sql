@@ -76,6 +76,7 @@ class TaskScore:
     self_service: bool          # S06
     failure_code: str | None
     set_f1: float | None = None
+    retrieval_recall: float | None = None  # S03
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -191,11 +192,18 @@ class Scorer:
                                  gold_empty=not gold.result.rows, tables_exact=tables_exact, abstained=abstained,
                                  numeric_claims_on_insufficient=task.task_type == "insufficient" and bool(numeric),
                                  ungrounded_claims=bool(bad))
+        retrieval_recall = None
+        if pred.retrieved_tables is not None and task.result_checkable:
+            gt = tables_in(task.gold["sql"], dialect)
+            if gt:
+                retrieval_recall = len(gt & {t.lower() for t in pred.retrieved_tables}) / len(gt)
         u = pred.usage
-        return TaskScore(task.task_id, pred.system_id, run_index, task.dataset, task.task_type, ans.status,
+        score = TaskScore(task.task_id, pred.system_id, run_index, task.dataset, task.task_type, ans.status,
                          task.result_checkable, executed, correct, success, detail, had_failure, recovered_exec,
                          recovered_success, tables_exact, tables_p, tables_r, pred.counters.tool_calls,
                          pred.counters.llm_calls, pred.latency_s, pred.llm_latency_s, pred.db_latency_s,
                          u.input_tokens, u.output_tokens, u.cache_read_input_tokens, u.cache_creation_input_tokens,
                          u.cost_usd, u.uncached_cost_usd, validation_failed, checks, len(numeric),
                          len(numeric) - len(bad), abstained, silent_wrong, self_service, code, set_f1)
+        score.retrieval_recall = retrieval_recall
+        return score

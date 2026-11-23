@@ -1,0 +1,59 @@
+{
+  "instance": "test",
+  "seed": 2202,
+  "disabled_events": [],
+  "events_sha256": "946c8848c7e7886afdc9d4b36fa72c9f6c43b60fc5e57f88c350222622762629",
+  "schema_sha256": "fef90e266434ac6faae9674e15ca89afde88f82b974f21c1f727a491e940d3a8",
+  "generator_sha256": "0b019f65470d830a2fb206d9473a8b545cb963efb09214686762403a90cfc6f1",
+  "row_counts": {
+    "regions": 6,
+    "categories": 16,
+    "products": 300,
+    "product_costs": 900,
+    "customers": 5000,
+    "promotions": 25,
+    "orders": 61373,
+    "order_items": 153248,
+    "returns": 5545,
+    "transactions": 61921,
+    "business_events": 14,
+    "calendar": 731
+  },
+  "csv_sha256": {
+    "regions.csv": "84d2b87508997b4b1eda490469afe15f867be9d393e5a600e697f34dc010cde1",
+    "categories.csv": "70105957f189b655f94a8dc79e71b320156a40af2c096612787eb163d20b7fc0",
+    "products.csv": "b5a43cbb691a4cc357a5cd28188668c44af4d22088b5b35d7c98ca6f4785ef76",
+    "product_costs.csv": "c550a73821d9de6f5d275f7888d0b8b1d0490dc5e5ac94be84379aece14ec2ae",
+    "customers.csv": "b0b7067765f1f954cc59e7215597c2ecb6fa5c1a9474111726d48853d787e6c5",
+    "promotions.csv": "73ae56f51f7c9986c4e4adb595690c6c6f94b89ca8fd08d38495418305afda4a",
+    "orders.csv": "34891492431c06286a502a0e12b8bb1284b0fbafb10ef794764f91e9ab04c2d7",
+    "order_items.csv": "23b77965c505ac6ffc8364b40ded393999e7a3d9a52344419318b06cbc23746f",
+    "returns.csv": "f2802ae0e236fe6ae91f557e8b19cee78adc663835afd7064600c9c561e66911",
+    "transactions.csv": "fbe0eed47a5394cd3688dbfc649474270155081468fa8e32b2de51d5a681a36a",
+    "business_events.csv": "a276550eb133d20cfd50cd822c206f6845c6c6f008eaec0ad8760bdd4997c753",
+    "calendar.csv": "ea713af77668a81f542e4f75e06d11a8fa47507444a3329b395f15136b6d4cf3"
+  },
+  "frozen": {
+    "frozen_files": {
+      "bi_dataset/events/test.json": "946c8848c7e7886afdc9d4b36fa72c9f6c43b60fc5e57f88c350222622762629",
+      "bi_dataset/tasks/test.jsonl": "ce18594d391b1cd6ef14f3129c164882658eb3ff2b60e1ed98497278f51eafef",
+      "bi_dataset/tasks/study.jsonl": "13fdd99a99062374bc052d4d0b36025cdcf28e231ac3b32572eaf82cc60b45cd"
+    },
+    "csv_sha256": {
+      "regions.csv": "84d2b87508997b4b1eda490469afe15f867be9d393e5a600e697f34dc010cde1",
+      "categories.csv": "70105957f189b655f94a8dc79e71b320156a40af2c096612787eb163d20b7fc0",
+      "products.csv": "b5a43cbb691a4cc357a5cd28188668c44af4d22088b5b35d7c98ca6f4785ef76",
+      "product_costs.csv": "c550a73821d9de6f5d275f7888d0b8b1d0490dc5e5ac94be84379aece14ec2ae",
+      "customers.csv": "b0b7067765f1f954cc59e7215597c2ecb6fa5c1a9474111726d48853d787e6c5",
+      "promotions.csv": "73ae56f51f7c9986c4e4adb595690c6c6f94b89ca8fd08d38495418305afda4a",
+      "orders.csv": "34891492431c06286a502a0e12b8bb1284b0fbafb10ef794764f91e9ab04c2d7",
+      "order_items.csv": "23b77965c505ac6ffc8364b40ded393999e7a3d9a52344419318b06cbc23746f",
+      "returns.csv": "f2802ae0e236fe6ae91f557e8b19cee78adc663835afd7064600c9c561e66911",
+      "transactions.csv": "fbe0eed47a5394cd3688dbfc649474270155081468fa8e32b2de51d5a681a36a",
+      "business_events.csv": "a276550eb133d20cfd50cd822c206f6845c6c6f008eaec0ad8760bdd4997c753",
+      "calendar.csv": "ea713af77668a81f542e4f75e06d11a8fa47507444a3329b395f15136b6d4cf3"
+    },
+    "generator_sha256": "0b019f65470d830a2fb206d9473a8b545cb963efb09214686762403a90cfc6f1",
+    "events_sha256": "946c8848c7e7886afdc9d4b36fa72c9f6c43b60fc5e57f88c350222622762629"
+  }
+}

@@ -127,6 +127,12 @@ class Runner:
     def _guard(self, manifest: dict) -> None:
         if manifest["dirty"] and not self.allow_dirty:
             raise SystemExit("refusing to run on a dirty git tree (use --allow-dirty for exploratory runs)")
+        for ref in self.cfg.datasets:
+            if ref.dataset == "bi" and ref.split in ("test", "study"):
+                from bi_dataset.verify_frozen import frozen_task_hash
+
+                if frozen_task_hash(ref.split) != manifest_hash(ref.split):
+                    raise SystemExit(f"BI {ref.split} manifest hash differs from the frozen value; refusing to run")
         if any(ref.split == "test" for ref in self.cfg.datasets):
             from agent_sql.eval.prereg import is_preregistered
 

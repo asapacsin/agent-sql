@@ -56,6 +56,7 @@ class RunContext:
     llm_latency_s: float = 0.0
     db_latency_s: float = 0.0
     started: float = field(default_factory=time.monotonic)
+    retrieved_tables: list[str] | None = None
 
     def __post_init__(self) -> None:
         path = (self.rt.trace_dir / f"{self.task.task_id}__{self.system_id}__{self.run_id}.jsonl"
@@ -115,7 +116,7 @@ class RunContext:
                                            failures=self.failures, repairs=self.repairs,
                                            verification_queries=self.verification_queries),
                          latency_s=latency, llm_latency_s=self.llm_latency_s, db_latency_s=self.db_latency_s,
-                         served_models=self.served_models,
+                         served_models=self.served_models, retrieved_tables=self.retrieved_tables,
                          trace_path=str(self.trace.path) if self.trace.path else None)
 
 

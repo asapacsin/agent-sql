@@ -1,0 +1,21 @@
+{
+  "instance": "test",
+  "seed": 2202,
+  "events": [
+    {"id": "T1", "logged": true, "event_type": "stockout", "start": "2025-05-05", "end": "2025-06-15",
+     "region": "Midwest", "category": "Camping", "effect": {"kind": "intensity", "factor": 0.3},
+     "description": "Carrier strike disrupted Camping inventory at the Midwest warehouse."},
+    {"id": "T2", "logged": true, "event_type": "price_change", "start": "2025-03-01", "end": "2025-12-31",
+     "category": "Phones", "effect": {"kind": "price", "factor": 1.10, "intensity": 0.85},
+     "description": "Phone prices raised 10% after a supplier contract renewal."},
+    {"id": "T3", "logged": false, "event_type": "churn", "start": "2025-03-01", "end": "2025-04-30",
+     "acquisition_channel": "paid_search", "effect": {"kind": "churn", "factor": 4.0},
+     "description": "Unlogged: elevated churn among customers acquired through paid search."},
+    {"id": "T4", "logged": true, "event_type": "promotion", "start": "2025-04-14", "end": "2025-04-21",
+     "effect": {"kind": "promotion", "factor": 1.6, "discount_pct": 10.0},
+     "description": "Spring sale: 10% off sitewide."},
+    {"id": "T5", "logged": true, "event_type": "competitor_entry", "start": "2025-08-01", "end": "2025-12-31",
+     "region": "Northeast", "department": "Apparel", "effect": {"kind": "intensity", "factor": 0.75},
+     "description": "A fast-fashion competitor opened flagship stores in the Northeast."}
+  ]
+}

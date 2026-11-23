@@ -125,4 +125,5 @@ class RunResult(BaseModel):
     llm_latency_s: float = 0.0
     db_latency_s: float = 0.0
     served_models: list[str] = Field(default_factory=list)
+    retrieved_tables: list[str] | None = None  # initial retrieved schema context (S03); None = full schema
     trace_path: str | None = None
