@@ -66,32 +66,65 @@ def v1(ci: CheckInput) -> ValidationCheck:
 
 
 # ---------------------------------------------------------------- V2 metric conformance
-def _has_recognized_status(tree) -> bool:  # noqa: ANN001
-    for node in tree.find_all(exp.In):
-        col = node.this
-        if isinstance(col, exp.Column) and col.name.lower() == "status":
-            vals = {e.name.lower() for e in node.expressions if isinstance(e, exp.Literal)}
-            if vals == {"shipped", "completed"}:
-                return True
+def _conjuncts(node):  # noqa: ANN001, ANN202
+    """Top-level AND conjuncts of a predicate (parentheses unwrapped)."""
+    while isinstance(node, exp.Paren):
+        node = node.this
+    if isinstance(node, exp.And):
+        return _conjuncts(node.left) + _conjuncts(node.right)
+    return [node] if node is not None else []
+
+
+def _scope_predicates(select: exp.Select) -> list:
+    preds = []
+    where = select.args.get("where")
+    if where is not None:
+        preds += _conjuncts(where.this)
+    for j in select.args.get("joins") or []:
+        if j.args.get("on") is not None:
+            preds += _conjuncts(j.args["on"])
+    return preds
+
+
+def _is_status_filter(pred) -> bool:  # noqa: ANN001
+    if isinstance(pred, exp.In) and not pred.args.get("is_global"):
+        col = pred.this
+        if isinstance(col, exp.Column) and col.name.lower() == "status" and not isinstance(pred.parent, exp.Not):
+            vals = {e.name.lower() for e in pred.expressions if isinstance(e, exp.Literal)}
+            return vals == {"shipped", "completed"}
     return False
 
 
-def _excludes_test_accounts(tree) -> bool:  # noqa: ANN001
-    for node in tree.find_all(exp.EQ, exp.NEQ, exp.Not, exp.Is):
-        cols = [c for c in node.find_all(exp.Column) if c.name.lower() == "is_test_account"]
-        if not cols:
+def _is_test_exclusion(pred) -> bool:  # noqa: ANN001
+    def is_col(n):  # noqa: ANN001, ANN202
+        return isinstance(n, exp.Column) and n.name.lower() == "is_test_account"
+    if isinstance(pred, exp.Not):
+        return is_col(pred.this)
+    lit = lambda n: n.sql().lower() if n is not None else ""  # noqa: E731
+    if isinstance(pred, exp.EQ) and is_col(pred.this):
+        return lit(pred.expression) in ("false", "0")
+    if isinstance(pred, exp.NEQ) and is_col(pred.this):
+        return lit(pred.expression) in ("true", "1")
+    if isinstance(pred, exp.Is) and is_col(pred.this):
+        return lit(pred.expression) == "false"
+    return False
+
+
+def _reads(select: exp.Select, table: str) -> bool:
+    sources = [select.args.get("from_") or select.args.get("from")] + list(select.args.get("joins") or [])
+    return any(isinstance(src.this, exp.Table) and src.this.name.lower() == table for src in sources if src is not None)
+
+
+def _conforms(tree) -> tuple[bool, bool]:  # noqa: ANN001
+    """(status ok, test-account ok): positive top-level AND conjuncts in the SELECT scope that reads orders."""
+    status_ok = test_ok = False
+    for sel in tree.find_all(exp.Select):
+        if not _reads(sel, "orders"):
             continue
-        if isinstance(node, exp.Not):
-            return True
-        rhs = node.expression
-        lit = rhs.sql().lower() if rhs is not None else ""
-        if isinstance(node, exp.EQ) and lit in ("false", "0"):
-            return True
-        if isinstance(node, exp.NEQ) and lit in ("true", "1"):
-            return True
-        if isinstance(node, exp.Is) and lit in ("false",):
-            return True
-    return False
+        preds = _scope_predicates(sel)
+        status_ok = status_ok or any(_is_status_filter(p) for p in preds)
+        test_ok = test_ok or any(_is_test_exclusion(p) for p in preds)
+    return status_ok, test_ok
 
 
 def v2(ci: CheckInput) -> ValidationCheck:
@@ -108,9 +141,10 @@ def v2(ci: CheckInput) -> ValidationCheck:
     if tree is None:
         return ValidationCheck(id="V2", result="FAIL", detail="final SQL not parseable")
     missing = []
-    if not _has_recognized_status(tree):
+    status_ok, test_ok = _conforms(tree)
+    if not status_ok:
         missing.append("orders.status IN ('shipped','completed')")
-    if not _excludes_test_accounts(tree):
+    if not test_ok:
         missing.append("customers.is_test_account = FALSE")
     if missing:
         return ValidationCheck(id="V2", result="FAIL", detail=f"{needs}: missing {missing}")
@@ -146,7 +180,10 @@ def v3(ci: CheckInput) -> ValidationCheck:
 def v4(ci: CheckInput) -> ValidationCheck:
     if not ci.is_bi or not ci.periods:
         return ValidationCheck(id="V4", result="N/A", detail="no plan periods")
-    sqls = " ".join(q.sql for q in ci.queries.values() if q.status == "OK")
+    final = _final(ci)
+    if final is None:
+        return ValidationCheck(id="V4", result="N/A", detail="no final result")
+    sqls = final.sql  # the final query's own filters, not any query
     missing, closed = [], []
     for p in ci.periods:
         start, end = p.get("start"), p.get("end")
@@ -170,8 +207,11 @@ def v5(ci: CheckInput) -> ValidationCheck:
     final = _final(ci)
     if final is None or not final.rows:
         return ValidationCheck(id="V5", result="N/A", detail="no final result")
-    keys = [i for i in range(len(final.columns))
-            if not all(to_number(r[i]) is not None for r in final.rows if r[i] is not None)]
+    keyish = ("_id", "id", "month", "quarter", "year", "week", "date", "day", "period")
+    keys = [i for i, c in enumerate(final.columns)
+            if c.lower().endswith(keyish) or not all(to_number(r[i]) is not None for r in final.rows if r[i] is not None)]
+    if any(final.columns[i].lower().endswith("_id") for i in keys):  # ids define the grain; names may repeat
+        keys = [i for i in keys if final.columns[i].lower().endswith(keyish)]
     if not keys or len(final.rows) == 1:
         return ValidationCheck(id="V5", result="N/A", detail="no grain key")
     grain = [tuple(r[i] for i in keys) for r in final.rows]
@@ -242,3 +282,13 @@ def canonical_totals(metric_ids: list[str], periods: list[dict], run_template) -
             if v is not None:
                 out[(m, p["start"], p["end"])] = float(v)
     return out
+
+
+def model_safe(checks: list[ValidationCheck]) -> list[dict]:
+    """What the agent may see: check id, result and a value-free reason (canonical values stay in the trace)."""
+    reasons = {"V1": "a numeric claim does not match its cited cell", "V2": "metric definition predicates missing",
+               "V3": "breakdown does not reconcile with the canonical total for the plan period",
+               "V4": "final SQL does not use the plan period bounds", "V5": "duplicate grain keys (possible fan-out)",
+               "V6": "final result empty or mostly null", "V7": "result truncated", "V8": "queries disagree"}
+    return [{"id": c.id, "result": c.result, "reason": reasons.get(c.id, "")} for c in checks
+            if c.result in ("FAIL", "WARN")]

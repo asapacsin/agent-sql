@@ -62,8 +62,12 @@ class RunContext:
         path = (self.rt.trace_dir / f"{self.task.task_id}__{self.system_id}__{self.run_id}.jsonl"
                 if self.rt.trace_dir else None)
         self.trace = Trace(self.run_id, self.task.task_id, self.system_id, path)
+        # exploration/validation/templates use `executor`; only the agent's own SQL executions (`execute`) carry
+        # the E3 FM1 fault hook, so the injected fault always lands on a counted, stored query.
         self.executor = Executor(self.rt.db, statement_timeout_s=self.rt.limits.statement_timeout_s,
-                                 max_rows=self.rt.limits.max_result_rows_stored, fault_hook=self.rt.fault_hook)
+                                 max_rows=self.rt.limits.max_result_rows_stored)
+        self.sql_executor = Executor(self.rt.db, statement_timeout_s=self.rt.limits.statement_timeout_s,
+                                     max_rows=self.rt.limits.max_result_rows_stored, fault_hook=self.rt.fault_hook)
 
     # ---------------------------------------------------------------- LLM
     def call_llm(self, *, system: str, messages: list[dict], tools: list[ToolSpec] | None = None,
@@ -89,7 +93,7 @@ class RunContext:
     def execute(self, sql: str, purpose: str, label: str | None = None, emit: bool = True) -> QueryRecord:
         if emit:
             self.trace.emit("tool_call", tool="execute_readonly_sql", purpose=purpose, args={"sql": sql, "label": label})
-        rec = self.executor.run(sql, self.store, label)
+        rec = self.sql_executor.run(sql, self.store, label)
         self.db_latency_s += rec.elapsed_ms / 1000
         if not rec.ok:
             self.failures += 1

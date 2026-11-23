@@ -24,6 +24,7 @@ class A1System:
     def schema_block(self, ctx: RunContext) -> tuple[str, str]:
         mode = self.flags["schema_context"]
         db = self.rt.db
+        ctx.tool_calls += 1 if mode != "retrieved" else 0  # same initial charge in every schema_context mode
         if mode == "full":
             return "Schema:", render_full_schema(db)
         if mode == "names_only":

@@ -198,7 +198,15 @@ def compare_query_results(ctx: RunContext, purpose: str, left_query_id: str, rig
             vals = [r[res.columns.index(col)] for r in res.rows if r[res.columns.index(col)] is not None]
             return len(vals) if aggregate == "count" else (sum(vals) if aggregate == "sum" else (vals[0] if vals else None))
 
+        from agent_sql.verification.numeric import to_number
+
+        for res, col in ((L, lc), (R, rc)):
+            if aggregate == "sum" and any(to_number(r[res.columns.index(col)]) is None
+                                          for r in res.rows if r[res.columns.index(col)] is not None):
+                return _err("TYPE_ERROR", f"column {col!r} is not numeric; cannot sum")
         lv, rv = agg(L, lc), agg(R, rc)
+        if aggregate == "none":
+            lv, rv = to_number(lv), to_number(rv)
         rel = None if lv is None or rv in (None, 0) else abs(lv - rv) / abs(rv)
         return {"status": "OK", "left_value": lv, "right_value": rv, "rel_diff": rel,
                 "within_tolerance": lv is not None and rv is not None and _close(lv, rv, tol, 0.01)}

@@ -67,3 +67,30 @@ def test_v8_comparisons():
 def test_report_status():
     assert run_checks(ci()).status == "PASSED"
     assert run_checks(ci(rows=[("West", 60.0), ("West", 60.0)])).status == "FAILED"
+
+
+def test_v2_rejects_negated_or_disjunctive_predicates():
+    neg = GOOD_SQL.replace("o.status IN ('shipped', 'completed')", "o.status NOT IN ('shipped', 'completed')")
+    assert v2(ci(sql=neg)).result == "FAIL"
+    neg2 = GOOD_SQL.replace("c.is_test_account = FALSE", "NOT (c.is_test_account = FALSE)")
+    assert v2(ci(sql=neg2)).result == "FAIL"
+    disj = GOOD_SQL.replace("AND c.is_test_account = FALSE", "OR c.is_test_account = FALSE")
+    assert v2(ci(sql=disj)).result == "FAIL"
+    cte = ("WITH l AS (SELECT oi.quantity FROM order_items oi JOIN orders o ON o.order_id = oi.order_id "
+           "JOIN customers c ON c.customer_id = o.customer_id WHERE o.status IN ('shipped', 'completed') "
+           "AND c.is_test_account = FALSE) SELECT SUM(quantity) AS v FROM l")
+    assert v2(ci(sql=cte, rows=[(1.0,)], cols=("v",))).result == "PASS"
+
+
+def test_v5_numeric_ids_are_grain_keys():
+    rows = [(1, "Lamp", 3.0), (2, "Lamp", 4.0)]
+    assert v5(ci(rows=rows, cols=("product_id", "product_name", "rev"))).result == "PASS"
+    assert v5(ci(rows=[(1, "Lamp", 3.0), (1, "Lamp", 3.0)], cols=("product_id", "product_name", "rev"))).result == "FAIL"
+
+
+def test_model_safe_hides_values():
+    from agent_sql.verification.checks import model_safe
+
+    key = ("gross_revenue", "2025-07-01", "2025-10-01")
+    out = model_safe(run_checks(ci(totals={key: 123456.78})).checks)
+    assert out and "123456" not in str(out)

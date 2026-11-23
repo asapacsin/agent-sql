@@ -52,3 +52,14 @@ def bi_dev_any(request):
     if not bi_sqlite_path("dev").exists():
         pytest.skip("RetailCo-dev not generated")
     return open_bi("dev", "sqlite")
+
+
+def pytest_collection_modifyitems(config, items):  # noqa: ANN001
+    """The full BIRD parity check (>1000 s) runs only in its dedicated gate `bird-parity`, which names the file
+    explicitly; directory-wide gates (integration-sqlite) skip it (CHANGELOG A17)."""
+    if any("test_bird_parity.py" in str(a) for a in config.args):
+        return
+    skip = pytest.mark.skip(reason="run by gate bird-parity (tests/integration/test_bird_parity.py)")
+    for item in items:
+        if item.fspath.basename == "test_bird_parity.py":
+            item.add_marker(skip)

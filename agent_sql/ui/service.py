@@ -1,9 +1,12 @@
 """UI backend: runs a system on one question and collects what the page renders (no business logic in the page)."""
 from __future__ import annotations
 
+import json
 import os
+import tempfile
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from agent_sql.config.settings import load_limits, load_model_settings, load_system
 from agent_sql.db.executor import Executor, ResultStore
@@ -13,7 +16,6 @@ from agent_sql.llm.pricing import load_pricing
 from agent_sql.systems.base import Runtime
 from agent_sql.systems.contracts import RunResult, TaskInput
 from agent_sql.systems.factory import build_system
-from agent_sql.tracing.events import Trace
 
 UI_SYSTEMS = ["a2", "a1", "b1", "b0"]
 UI_DATABASES = ["retailco_dev"]  # the held-out test instance is never exposed in the UI (leakage)
@@ -39,25 +41,18 @@ def run_question(system_id: str, db_id: str, question: str, llm: LLMClient, as_o
         raise ValueError(f"database {db_id} is not available in the UI")
     db = open_database(db_id)
     model = load_model_settings().model_copy(update={"benchmark_mode": False})  # interactive: fallbacks shown
-    rt = Runtime(db, llm, model, load_limits(), load_pricing())
+    trace_dir = Path(tempfile.mkdtemp(prefix="agent-sql-ui-"))  # per-run trace file: thread-safe across sessions
+    rt = Runtime(db, llm, model, load_limits(), load_pricing(), trace_dir)
     system = build_system(rt, load_system(system_id))
     from datetime import date
 
     task = TaskInput(task_id=f"ui-{int(time.time() * 1000)}", db_id=db_id, question=question,
                      as_of_date=date.fromisoformat(as_of) if as_of else None)
-    captured: list[Trace] = []
-    original_init = Trace.__init__
-
-    def capture(self, *a, **k):  # noqa: ANN001, ANN002, ANN003
-        original_init(self, *a, **k)
-        captured.append(self)
-
-    Trace.__init__ = capture
-    try:
-        result = system.run(task)
-    finally:
-        Trace.__init__ = original_init
-    run = UIRun(result, trace_events=captured[-1].events if captured else [])
+    result = system.run(task)
+    events = []
+    if result.trace_path:
+        events = [json.loads(line) for line in Path(result.trace_path).read_text().splitlines() if line.strip()]
+    run = UIRun(result, trace_events=events)
     ex = Executor(db, statement_timeout_s=30, max_rows=1000)
     wanted = set(result.answer.tables) | ({result.answer.final_query_id} if result.answer.final_query_id else set())
     for q in result.queries:

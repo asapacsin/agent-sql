@@ -214,7 +214,10 @@ class AgentLoop:
         self._check_tool_budget()
         kwargs = {k: v for k, v in args.items()}
         before = ctx.failures
-        out = tool.fn(ctx, **kwargs)
+        try:
+            out = tool.fn(ctx, **kwargs)
+        except Exception as e:  # noqa: BLE001 - a tool bug or odd argument combination is an observation
+            out = {"status": "ERROR", "error_class": "TOOL_ERROR", "message": f"{type(e).__name__}: {str(e)[:200]}"}
         status = out.get("status", "OK")
         failed = status in FAILURE_STATUSES and name in ("execute_readonly_sql", "validate_sql")
         if failed:
@@ -232,8 +235,8 @@ class AgentLoop:
             self._budget_event("failures", self.state.scope_failures, self.limits.max_failures, "terminate")
             raise Terminate(FinalAnswer.failure("FAILED_REPAIR_BUDGET",
                                                 f"{self.state.scope_failures} SQL failures exhausted the repair budget"))
-        if name == "execute_readonly_sql" and self.feedback == "binary":
-            out = {"status": status, "query_id": out.get("query_id")}
+        if self.feedback == "binary" and name in ("execute_readonly_sql", "validate_sql", "get_query_result_metadata"):
+            out = {"status": status, "query_id": out.get("query_id")}  # AB4: no messages, hints or values
         return out, status not in ("OK",)
 
     def _check_tool_budget(self) -> None:

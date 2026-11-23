@@ -163,14 +163,16 @@ class Scorer:
                 grec = self._exec_uncapped(task.db_id, task.gold["sql"], validate=False)
                 if grec is None or not grec.ok:
                     raise RuntimeError(f"gold SQL failed uncapped for {task.task_id}")
-                if grec.result.truncated or (prec is not None and prec.ok and prec.result.truncated):
-                    raise RuntimeError(f"{task.task_id}: result exceeds BIRD_EX_MAX_ROWS; refusing a prefix comparison")
+                if grec.result.truncated:
+                    raise RuntimeError(f"{task.task_id}: GOLD exceeds BIRD_EX_MAX_ROWS; refusing a prefix comparison")
                 executed = bool(prec is not None and prec.ok)
-                correct = executed and bird_execution_match(prec.result.rows, grec.result.rows)
+                over_cap = executed and prec.result.truncated  # gold fits, so an over-cap prediction cannot match
+                correct = executed and not over_cap and bird_execution_match(prec.result.rows, grec.result.rows)
+                detail = "prediction exceeds BIRD_EX_MAX_ROWS (scored as mismatch)" if over_cap else ""
             else:
                 correct = False
             success = bool(correct) and ans.status == "ANSWERED"
-            detail = "EX match" if correct else "EX mismatch"
+            detail = detail or ("EX match" if correct else "EX mismatch")
         elif task.task_type in ("aggregate", "ranking", "trend", "cohort"):
             if executed:
                 v = score_bi_result(spec, rec.result.columns, rec.result.rows, gold.result.columns, gold.result.rows)

@@ -15,7 +15,7 @@ from agent_sql.systems.a1_agent import A1System
 from agent_sql.systems.base import RunContext, Runtime
 from agent_sql.systems.contracts import FinalAnswer, RunResult, TaskInput, ValidationCheck
 from agent_sql.tools.registry import A2_DATA_TOOLS, EXPLORATION
-from agent_sql.verification.checks import CheckInput, QueryView, canonical_totals, run_checks
+from agent_sql.verification.checks import CheckInput, QueryView, canonical_totals, model_safe, run_checks
 from agent_sql.verification.metrics_registry import load_registry
 
 
@@ -202,7 +202,7 @@ class A2Loop(AgentLoop):
         last = next((q for q in reversed(list(self.completed.values())) if q), None)
         probe = FinalAnswer(status="ANSWERED", final_query_id=last)
         report = run_checks(self._check_input(probe))
-        failing = [c.model_dump() for c in report.checks if c.result in ("FAIL", "WARN")]
+        failing = model_safe(report.checks)  # no canonical values reach the model (review finding)
         for c in report.checks:
             self.ctx.trace.emit("validation", check_id=c.id, result=c.result, detail=c.detail)
         return {"verification": failing or ["all applicable checks passed"],
@@ -226,7 +226,8 @@ class A2Loop(AgentLoop):
         if v1.result == "FAIL" and self.revisions == 0:
             self.revisions += 1
             self.ctx.trace.emit("validation", check_id="V1", result="FAIL", detail=v1.detail + " (revision requested)")
-            return {"status": "REJECTED", "problems": [v1.detail], "instruction": "Fix the cited cells or values."}, True
+            return {"status": "REJECTED", "problems": model_safe([v1]) + [{"claims": v1.detail.split(": ", 1)[-1]}],
+                    "instruction": "Fix the cited cells or values."}, True
         answer.validation = report
         self._uncertainty_floor(answer)
         for c in report.checks:
@@ -244,6 +245,18 @@ class A2Loop(AgentLoop):
                                 detail=f"raised from {answer.uncertainty.level} to high")
             answer.uncertainty.level = "high"
             answer.uncertainty.reasons += reasons
+
+
+def _a2_finalize(self, reason: str) -> FinalAnswer:  # noqa: ANN001
+    """FINALIZE for A2 also runs V1-V8 and the uncertainty floor (review finding)."""
+    answer = AgentLoop._finalize(self, reason)
+    if answer.status in ("ANSWERED", "INSUFFICIENT_DATA") and self.flags["verification"] == "on":
+        answer.validation = run_checks(self._check_input(answer))
+        self._uncertainty_floor(answer)
+    return answer
+
+
+A2Loop._finalize = _a2_finalize
 
 
 class A2System(A1System):
