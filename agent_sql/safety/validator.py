@@ -202,11 +202,20 @@ def validate_sql(sql: str, policy: AccessPolicy) -> ValidationResult:
             parent = star.parent
             if isinstance(parent, exp.Count):
                 continue
-            if isinstance(parent, exp.Column) and parent.table and parent.table.lower() not in \
-                    {t for t in tables if policy.restricted_columns(t)} | _aliases_of_restricted(tree, policy):
+            sel = star.find_ancestor(exp.Select)
+            if sel is None:
                 continue
-            return _reject("SR8", "SELECT * over a table with restricted columns; list the columns explicitly",
-                           "RESTRICTED_COLUMN", "restricted: " + ", ".join(sorted(restricted_here)))
+            # direct sources of the SELECT whose projection holds the star: alias -> base table name (CTEs excluded)
+            sources = {}
+            for src in [sel.args.get("from_") or sel.args.get("from")] + list(sel.args.get("joins") or []):
+                node = src.this if src is not None else None
+                if isinstance(node, exp.Table) and node.name.lower() not in cte_names:
+                    sources[(node.alias or node.name).lower()] = node.name.lower()
+            qualifier = parent.table.lower() if isinstance(parent, exp.Column) and parent.table else None
+            expanded = [sources[qualifier]] if qualifier in sources else ([] if qualifier else list(sources.values()))
+            if any(policy.restricted_columns(t) for t in expanded):
+                return _reject("SR8", "SELECT * over a table with restricted columns; list the columns explicitly",
+                               "RESTRICTED_COLUMN", "restricted: " + ", ".join(sorted(restricted_here)))
         for col in tree.find_all(exp.Column):
             if col.name and col.name.lower() in restricted_here:
                 return _reject("SR8", f"column {col.name!r} is restricted", "RESTRICTED_COLUMN")
@@ -242,10 +251,6 @@ def validate_sql(sql: str, policy: AccessPolicy) -> ValidationResult:
             return ValidationResult("OK", [], warnings + _warnings(tree, policy, tables), tables, columns)
 
     return ValidationResult("OK", [], _warnings(tree, policy, tables), tables, columns)
-
-
-def _aliases_of_restricted(tree: exp.Expression, policy: AccessPolicy) -> set[str]:
-    return {t.alias.lower() for t in tree.find_all(exp.Table) if t.alias and policy.restricted_columns(t.name)}
 
 
 def _unknown_column_name(message: str) -> str | None:

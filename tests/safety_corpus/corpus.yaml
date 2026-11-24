@@ -56,7 +56,11 @@ reject:
   - {sql: "SELECT customer_id FROM customers JOIN (SELECT 'a@example.com' AS email) x USING (email)", rule: SR8}
   - {sql: "SELECT customer_id FROM customers NATURAL JOIN (SELECT '555-1' AS phone) x", rule: SR8}
   - {sql: "SELECT COUNT(*) FROM customers c JOIN customers d USING (email)", rule: SR8}
+  - {sql: "WITH x AS (SELECT * FROM customers) SELECT customer_id FROM x", rule: SR8}
+  - {sql: "SELECT t.* FROM orders o JOIN customers t ON t.customer_id = o.customer_id", rule: SR8}
 pass:
+  - "WITH a AS (SELECT c.customer_id, c.segment FROM customers c) SELECT * FROM a"
+  - "SELECT o.* FROM orders o JOIN customers c ON c.customer_id = o.customer_id"
   - "SELECT order_id, status FROM orders WHERE status IN ('shipped', 'completed')"
   - "SELECT 1"
   - "SELECT COUNT(*) FROM customers"
