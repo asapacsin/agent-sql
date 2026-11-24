@@ -55,16 +55,47 @@ def _check_task(task_id: str) -> tuple[int, list]:
     return n, bad
 
 
+def _code_fingerprint() -> str:
+    """Checkpoints are valid only for the exact scorer/comparator/validator/executor code and these variants."""
+    import hashlib
+
+    root = Path(__file__).resolve().parents[2]
+    files = ["agent_sql/eval/scoring.py", "agent_sql/eval/comparators.py", "agent_sql/safety/validator.py",
+             "agent_sql/db/executor.py", "agent_sql/verification/numeric.py", "tests/integration/test_bird_parity.py",
+             "data/splits/bird.json"]
+    h = hashlib.sha256()
+    for f in files:
+        h.update((root / f).read_bytes())
+    return h.hexdigest()[:16]
+
+
+CHECKPOINT = Path(__file__).resolve().parents[2] / ".ai-native" / "parity_checkpoint.jsonl"
+
+
 @pytest.mark.skipif(not bird.DEV_JSON.exists(), reason="BIRD not downloaded")
 def test_parity_with_official_execute_sql_through_scorer():
+    """Resumable: per-task results are checkpointed (keyed by a code fingerprint) so container restarts do not lose
+    completed work; a checkpoint from different code is ignored."""
+    import json
     from concurrent.futures import ProcessPoolExecutor
 
+    fp = _code_fingerprint()
     ids = [t.task_id for split in ("dev", "val", "test") for t in bird.load_bird_tasks(split)]
     assert len(ids) == 350
-    n, bad = 0, []
-    with ProcessPoolExecutor(max_workers=4) as pool:
-        for k, b in pool.map(_check_task, ids, chunksize=4):
-            n += k
-            bad += b
+    done: dict[str, tuple[int, list]] = {}
+    if CHECKPOINT.exists():
+        for line in CHECKPOINT.read_text().splitlines():
+            r = json.loads(line)
+            if r["fp"] == fp:
+                done[r["task_id"]] = (r["n"], r["bad"])
+    todo = [i for i in ids if i not in done]
+    CHECKPOINT.parent.mkdir(parents=True, exist_ok=True)
+    with ProcessPoolExecutor(max_workers=4) as pool, open(CHECKPOINT, "a", encoding="utf-8") as ck:
+        for task_id, (k, b) in zip(todo, pool.map(_check_task, todo, chunksize=1), strict=True):
+            done[task_id] = (k, b)
+            ck.write(json.dumps({"fp": fp, "task_id": task_id, "n": k, "bad": b}) + "\n")
+            ck.flush()
+    n = sum(v[0] for v in done.values())
+    bad = [x for v in done.values() for x in v[1]]
     assert n >= 2800
     assert not bad, f"{len(bad)}/{n} disagreements, e.g. {bad[:5]}"
