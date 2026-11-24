@@ -179,25 +179,64 @@ Reproduction levels:
 - Exploratory analyses (anything not pre-registered, AB9, E4, S07) are labeled exploratory.
 - No result from dev/val runs appears as a headline number.
 
-## 9. Cost planning (assumption-based estimate; replaced by E0)
+## 9. Cost model and cost control
 
-Using `qwen3.7-plus-2026-05-26` list prices ($4/MTok input, $20/MTok output, $0.20/MTok cache read) and **assumed** per-task usage:
+### 9.1 Measured cost model (val calibration, `qwen3.7-plus-2026-05-26`, CHANGELOG A22)
 
-| System | Assumed usage per task | Assumed cost / task |
+Measured on BIRD-val + BI-val (120 tasks, 1 run, `reports/dev/val_calibration.md`). Mean tokens per task:
+
+| System | Mean tokens / task | LLM calls / task | Input share | Provider cache-hit share of input |
+| --- | --- | --- | --- | --- |
+| B0 | 4,300 | 1.2 | — | — |
+| B1 | 5,100 | 1.2 | — | — |
+| A1 | 22,700 | 3.5 | 92% | 72% |
+| A2 | 50,300 | 7.2 | 94% | 66% |
+| B1-SC (n = 4) | 17,900 | 4–5 | — | — |
+
+**What drives agent cost.** An agent call carries a fixed prefix (system prompt, retrieved schema, tool definitions: median ~5,100 input tokens on A1's first call; tool definitions alone ~1,600 tokens). Each later step adds only the new observation (median ~270 tokens, p90 ~900; observations are capped at 50 rows and 200 characters per cell by `configs/limits.yaml`). Agent cost is therefore approximately **LLM calls × fixed prefix**. History pruning and observation truncation, the usual levers for long coding agents, save little here; the levers that matter are (a) prompt caching of the fixed prefix, (b) the number of LLM calls, and (c) the size of the experiment.
+
+**Token budget of the plan (measured means × task-runs).**
+
+| Scope | Task-runs | Tokens |
 | --- | --- | --- |
-| B0 / B1 | ~6–9k input, ~1.5–2k output (incl. thinking, composer on BI) | ~$0.05 |
-| A1 | ~8 LLM calls, ~80k cumulative input (part cached), ~6k output | ~$0.20–0.45 |
-| A2 | ~16 LLM calls, ~200k cumulative input (part cached), ~12k output | ~$0.40–1.05 |
+| Val calibration = E0 pilot (§9.3 R7) | 5 systems × 120 | ~12M |
+| E1 main | 4 × 200 × 3 = 2,400 | ~50M |
+| E2 ablations, 1 run, 200 tasks (≈ 10 variants) | ~2,000 | ~60M |
+| E2 ablations, 3 runs | ~6,000 | ~180M |
+| E3 robustness | 4 × 90 = 360 | ~7M |
+| **Plan with E2 at 1 run** | | **~130M** |
 
-| Scope | Task-runs | Planning estimate |
+Cost per 1M tokens at list price, with no cache discount, ≈ 0.93 × $0.40 + 0.07 × $1.60 ≈ **$0.48** (~$62 for 130M). With a provider cache discount on ~70% of agent input, the real cost is lower; it is reported only from the confirmed cache rate (R2).
+
+### 9.2 Incidents that set these rules
+
+| Incident | Waste | Rule |
 | --- | --- | --- |
-| E0 pilot | 4 × 120 × 1 = 480 | ~$80–200 |
-| E1 main | 2,400 | ~$420–950 |
-| E2 ablations at 3 runs (≈ 10 variant configs) | ~6,000 | ~$1,500–3,500 |
-| E2 ablations at 1 run | ~2,000 | ~$500–1,200 |
-| E3 robustness | 4 × 90 = 360 | ~$60–150 |
+| Two runner processes on one output directory ran every task twice (val v1) | ~$3.4 | R4 |
+| Provider sent an array argument as a JSON string; strict validation rejected it and the agent resent it until the LLM-call budget (val v3: A1 12.7 vs 3.5 calls/task, A2 23.9 vs 7.2) | ~$7.9 | R3, R5 |
+| Cache-read tokens billed at the full input rate in `configs/pricing.yaml` because the cache rate was not confirmed | over-reported cost | R2 |
 
-These numbers are not measurements. A human approves `max_experiment_usd` (work item `h-approve-budget`) after E0 reports measured cost per task.
+### 9.3 Cost-control rules (binding)
+
+- **R1 Stable cacheable prefix.** System prompt, schema context and tool definitions are identical across the calls of one task and placed before any volatile content; nothing per-call (timestamps, run ids, timing) enters a request (also required for replay, CHANGELOG A9).
+- **R2 Priced cache.** `configs/pricing.yaml` records the provider's cache-read rate from the official price page or the provider's billing records, with source and date. Until confirmed, cache reads are charged at the full input rate (upper bound) and reports say so.
+- **R3 No-progress guards in code.** An invalid argument repaired deterministically is logged (`ARGS_COERCED`); 3 invalid control-tool calls end the task with `FAILED_INVALID_OUTPUT`; tool, LLM-call, token and wall-clock budgets stay as in `configs/limits.yaml` (CHANGELOG A24).
+- **R4 One runner per output directory** (`.runner.lock`); runs are resumable, never restarted from scratch when a checkpoint exists.
+- **R5 Smoke before scale.** After any change to a system, prompt, tool schema, provider or model, a live check of **5 tasks per changed system** runs first. The full run starts only if the smoke run has 0 runner errors, no budget hit caused by repeated identical calls, and mean LLM calls per task within 1.5× the last calibrated value.
+- **R6 Re-run only what changed.** Systems whose requests are unchanged are served from the record/replay cache; calibration after a change re-runs only the changed systems.
+- **R7 E0 reuses val calibration.** E0 is the final val calibration run on the frozen configuration; it is not run a second time.
+- **R8 Spend caps.** Every live experiment config sets `max_experiment_usd`; the runner stops at the cap. Before a run, the expected cost (§9.1 means × task-runs) is written in the run's config comment; a run whose expected cost exceeds the remaining approved budget does not start.
+- **R9 Report cost honestly.** Reports give tokens, cache-hit share and cost per task and per success from the trace usage; waste from incidents is reported, not hidden.
+
+### 9.4 Owner decisions on scope (proposed, not yet approved)
+
+| Option | Saves | Effect |
+| --- | --- | --- |
+| E2 ablations on 100 of the 200 test tasks (1 run) | ~30M tokens | wider ablation CIs only; E1 unchanged |
+| E2 ablations at 1 run instead of 3 | ~120M tokens | already the planned default under budget limits |
+| Model change to a cheaper or free provider | price-dependent | all calibration re-runs on the new model (§4 pins one model per experiment) |
+
+A human approves `max_experiment_usd` (work item `h-approve-budget`) after E0 reports measured cost per task.
 
 ## 10. E3 — Robustness / fault-injection suite
 
