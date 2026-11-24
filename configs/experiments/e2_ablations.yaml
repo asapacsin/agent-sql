@@ -2,8 +2,8 @@
 experiment_id: e2_ablations
 datasets: [{dataset: bird, split: test}, {dataset: bi, split: test}]
 systems: [a1_full_schema, a1_names_only, a1_noexplore, a1_feedback_binary, a1_repair0, a1_repair1, a2_noplan, a2_noverify, b1_sc]
-runs: 3
+runs: 1
 bi_engine: postgres
 llm: {mode: record}
 concurrency: 4
-max_experiment_usd: 3500.0  # replace with the owner-approved cap (h-approve-budget)
+max_experiment_usd: 35.0  # owner-approved option B: 1 run; projected ~$25, ~$35 with margin

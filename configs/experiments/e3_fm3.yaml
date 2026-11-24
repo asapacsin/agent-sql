@@ -6,4 +6,4 @@ runs: 1
 bi_engine: sqlite
 llm: {mode: record}
 concurrency: 4
-max_experiment_usd: 60.0
+max_experiment_usd: 3.0  # option B; projected ~$1.3

@@ -701,7 +701,7 @@
     {
       "id": "p6-preregister",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 350,
       "action": "Commit preregistration with frozen config and manifest hashes",
       "depends_on": [
@@ -709,7 +709,10 @@
         "h-approve-budget"
       ],
       "contract_path": "contracts/phase-6.json",
-      "phase": 6
+      "phase": 6,
+      "evidence": [
+        "experiments/preregistration.md: H1-H6, 6 locked config hashes, test manifest hashes; `python3 -m agent_sql prereg --verify` OK"
+      ]
     },
     {
       "id": "p6-main",
@@ -820,7 +823,7 @@
     {
       "id": "h-approve-budget",
       "owner": "HUMAN_DECISION",
-      "status": "HUMAN_REQUIRED",
+      "status": "PASS",
       "priority": 430,
       "action": "Approve max_experiment_usd after reviewing the E0 measured cost",
       "depends_on": [
@@ -839,7 +842,10 @@
         },
         "source": "reports/e0_pilot.md"
       },
-      "notes": "Owner pre-approved setting the cap after E0 measures cost (2026-11-24); the numeric cap is still to be recorded once Qwen rates are confirmed and E0 has run"
+      "notes": "Owner pre-approved setting the cap after E0 measures cost (2026-11-24); the numeric cap is still to be recorded once Qwen rates are confirmed and E0 has run",
+      "evidence": [
+        "Owner chose option B (E1 x3, E2 x1, E3) with total cap $90 on 2026-11-24; per-config caps: E1 $40, E2 $35, E3 3x$3, E4 $5"
+      ]
     },
     {
       "id": "h-run-analyst-study",

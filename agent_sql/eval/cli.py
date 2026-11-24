@@ -79,6 +79,13 @@ def cmd_report(args: argparse.Namespace) -> int:
 def cmd_prereg(args: argparse.Namespace) -> int:
     from agent_sql.eval.prereg import verify
 
+    if args.hash:
+        from agent_sql.eval.runner import Runner, load_experiment
+
+        for path in args.hash:
+            _, _, chash = Runner(load_experiment(Path(path)), replay=True).resolve()
+            print(f"{path}\t{chash}")
+        return 0
     ok, msg = verify()
     print(msg)
     return 0 if ok else 1
@@ -106,6 +113,7 @@ def main(argv: list[str] | None = None) -> int:
     p.set_defaults(fn=cmd_report)
     g = sub.add_parser("prereg", help="verify preregistration")
     g.add_argument("--verify", action="store_true")
+    g.add_argument("--hash", nargs="+", metavar="CONFIG", help="print the config hash to preregister for each config")
     g.set_defaults(fn=cmd_prereg)
     args = ap.parse_args(argv)
     return args.fn(args)

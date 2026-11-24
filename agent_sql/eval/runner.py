@@ -217,8 +217,8 @@ class Runner:
         finally:
             lock.unlink(missing_ok=True)
 
-    def _run(self) -> RunOutcome:
-        tasks = [t for ref in self.cfg.datasets for t in load_tasks(ref)]
+    def resolve(self) -> tuple[dict, dict, str]:
+        """Resolved config, prompt hashes and the config hash that preregistration locks."""
         sys_cfgs = {sid: load_system(sid) for sid in self.cfg.systems}
         from agent_sql.systems.base import load_prompts
 
@@ -227,7 +227,12 @@ class Runner:
         resolved = {"experiment": self.cfg.model_dump(), "systems": {k: v.model_dump() for k, v in sys_cfgs.items()},
                     "model": self.model.model_dump(), "limits": self.limits.model_dump(),
                     "datasets": dataset_hashes(self.cfg), "prompt_sha256": prompts}
-        chash = config_hash(resolved)
+        return resolved, prompts, config_hash(resolved)
+
+    def _run(self) -> RunOutcome:
+        tasks = [t for ref in self.cfg.datasets for t in load_tasks(ref)]
+        resolved, prompts, chash = self.resolve()
+        sys_cfgs = {sid: load_system(sid) for sid in self.cfg.systems}
         manifest = build_manifest(experiment_id=self.cfg.experiment_id, config_hash=chash, prompts=prompts,
                                   datasets=resolved["datasets"], model_id=self.model.model_id,
                                   pricing_version=self.pricing.version, seed=20261123,

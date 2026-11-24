@@ -6,4 +6,4 @@ runs: 3
 bi_engine: postgres
 llm: {mode: record}
 concurrency: 4
-max_experiment_usd: 950.0  # replace with the owner-approved cap (h-approve-budget)
+max_experiment_usd: 40.0  # owner-approved option B (2026-11-24); projected ~$24, ~$37 with margin (reports/e0_pilot.md)
