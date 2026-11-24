@@ -60,3 +60,42 @@ def test_runner_refuses_a_second_concurrent_runner(tmp_path):
     (tmp_path / "out" / ".runner.lock").write_text(str(os.getpid()))  # a live process holds the lock
     with pytest.raises(SystemExit, match="another runner"):
         Runner(cfg, replay=True, allow_dirty=True, out_dir=tmp_path / "out").run()
+
+
+def test_runner_treats_a_lock_without_pid_as_live(tmp_path):
+    """Review finding: a lock created but not yet holding its pid must not be deleted as stale."""
+    import pytest
+
+    from agent_sql.eval.runner import DatasetRef, ExperimentConfig, Runner
+
+    cfg = ExperimentConfig(experiment_id="lock", datasets=[DatasetRef(dataset="bi", split="dev", limit=1)],
+                           systems=["b0"], runs=1, llm={"mode": "replay", "cache": str(tmp_path / "c.jsonl")})
+    (tmp_path / "out").mkdir()
+    (tmp_path / "out" / ".runner.lock").write_text("")
+    with pytest.raises(SystemExit, match="another runner"):
+        Runner(cfg, replay=True, allow_dirty=True, out_dir=tmp_path / "out").run()
+    assert (tmp_path / "out" / ".runner.lock").exists()
+
+
+def test_projection_reordering_keeps_original_query():
+    """Review finding: if the projected rows come back in another order, the original final query is kept."""
+    from types import SimpleNamespace
+
+    from agent_sql.orchestration.agent_loop import apply_answer_projection
+
+    class Trace:
+        def __init__(self):
+            self.events = []
+
+        def emit(self, *a, **k):
+            self.events.append(k)
+
+    orig = SimpleNamespace(ok=True, sql="SELECT n, r FROM t ORDER BY r",
+                           result=SimpleNamespace(columns=["n", "r"], rows=[("a", 1), ("b", 2)]))
+    proj = SimpleNamespace(ok=True, query_id="q2", result=SimpleNamespace(columns=["n"], rows=[("b",), ("a",)]))
+    ctx = SimpleNamespace(store={"q1": orig}, trace=Trace(),
+                          executor=SimpleNamespace(run=lambda *a, **k: proj))
+    ans = SimpleNamespace(status="ANSWERED", answer_columns=["n"], final_query_id="q1", limitations=[], tables=[])
+    out = apply_answer_projection(ans, ctx)
+    assert out.final_query_id == "q1" and "row order" in out.limitations[0]
+    assert ctx.trace.events[-1]["result"] == "FAIL"

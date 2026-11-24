@@ -196,16 +196,22 @@ class Runner:
         processes on one directory ran every task twice and doubled the provider bill)."""
         self.out.mkdir(parents=True, exist_ok=True)
         lock = self.out / ".runner.lock"
+        pid_file = self.out / f".runner.lock.{os.getpid()}"
+        pid_file.write_text(str(os.getpid()))
         try:
-            fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        except FileExistsError:
-            pid = lock.read_text().strip()
-            if pid.isdigit() and _pid_alive(int(pid)):
-                raise SystemExit(f"another runner (pid {pid}) is writing {self.out}; refusing to start") from None
-            lock.unlink(missing_ok=True)  # stale lock from a dead process
-            fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        os.write(fd, str(os.getpid()).encode())
-        os.close(fd)
+            for _ in range(2):
+                try:
+                    os.link(pid_file, lock)  # atomic: the lock never exists without its pid
+                    break
+                except FileExistsError:
+                    pid = lock.read_text().strip()
+                    if not pid.isdigit() or _pid_alive(int(pid)):
+                        raise SystemExit(f"another runner (pid {pid or '?'}) is writing {self.out}; refusing to start") from None
+                    lock.unlink(missing_ok=True)  # stale lock from a dead process
+            else:
+                raise SystemExit(f"could not acquire {lock}; another runner is starting") from None
+        finally:
+            pid_file.unlink(missing_ok=True)
         try:
             return self._run()
         finally:

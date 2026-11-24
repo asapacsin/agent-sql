@@ -153,6 +153,17 @@ def apply_answer_projection(answer: FinalAnswer, ctx: RunContext) -> FinalAnswer
     if not proj.ok:
         answer.limitations.append("answer projection failed; the full final query is reported")
         return answer
+    # A derived table does not guarantee the inner ORDER BY survives; the projected rows must match the original
+    # rows projected in code, in order, or the original query is kept (review finding, phase-4 gate).
+    idx = [list(rec.result.columns).index(c) for c in answer.answer_columns]
+    expected = [tuple(r[i] for i in idx) for r in rec.result.rows]
+    got = [tuple(r) for r in (proj.result.rows if proj.result else [])]
+    n = min(len(expected), len(got))
+    if got[:n] != expected[:n] or len(proj.result.rows) != len(rec.result.rows):
+        ctx.trace.emit("validation", check_id="ANSWER_PROJECTION", result="FAIL",
+                       detail=f"{proj.query_id} row order or count differs from {answer.final_query_id}")
+        answer.limitations.append("answer projection changed row order; the full final query is reported")
+        return answer
     answer.tables = sorted(set(answer.tables) | {proj.query_id})
     answer.final_query_id = proj.query_id
     return answer
