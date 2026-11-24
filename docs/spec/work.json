@@ -632,7 +632,7 @@
     {
       "id": "p4-gate",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 310,
       "action": "Run all required gates in contracts/phase-4.json on a clean commit and obtain independent review",
       "depends_on": [
@@ -642,7 +642,11 @@
         "p4-a2-val"
       ],
       "contract_path": "contracts/phase-4.json",
-      "phase": 4
+      "phase": 4,
+      "evidence": [
+        "scripts/run_gates.py --phase 4: 11/11 required gates PASS on 680d64c (clean tree)",
+        "Independent review (separate reviewer agent, no edits): PASS with 2 findings (runner-lock race, projection row order), both fixed in A27 with regression tests; R5 smoke after fix: results/smoke_a27, 0 errors"
+      ]
     },
     {
       "id": "p5-ui",
