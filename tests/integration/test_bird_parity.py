@@ -32,6 +32,29 @@ def variants(gold: str, first_col_count: int) -> list[str]:
     return out
 
 
+class _OfficialTimeout(Exception):
+    pass
+
+
+def _official_with_timeout(pred: str, gold: str, path: str, seconds: float) -> int:
+    """The official script wraps execute_sql in func_timeout(meta_time_out) and scores a timeout or error as 0.
+    We apply the same rule with the evaluator's own timeout (eval_reexec_timeout_s) so both sides time out alike."""
+    import signal
+
+    def handler(signum, frame):  # noqa: ANN001, ARG001
+        raise _OfficialTimeout()
+
+    old = signal.signal(signal.SIGALRM, handler)
+    signal.setitimer(signal.ITIMER_REAL, seconds)
+    try:
+        return official.execute_sql(pred, gold, path)
+    except Exception:  # noqa: BLE001 - official script scores errors and timeouts as 0
+        return 0
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, old)
+
+
 def _check_task(task_id: str) -> tuple[int, list]:
     """Worker: compare our Scorer with the official execute_sql on every variant of one task."""
     ev = load_eval_settings()
@@ -41,10 +64,7 @@ def _check_task(task_id: str) -> tuple[int, list]:
     path = str(bird.db_path(db))
     n, bad = 0, []
     for v in variants(t.gold["sql"], 2):
-        try:
-            theirs = official.execute_sql(v, t.gold["sql"], path)
-        except Exception:  # noqa: BLE001 - official script scores errors as 0
-            theirs = 0
+        theirs = _official_with_timeout(v, t.gold["sql"], path, ev.eval_reexec_timeout_s)
         pred = RunResult(task_id=t.task_id, system_id="parity", run_id="p",
                          answer=FinalAnswer(status="ANSWERED", final_query_id="q1"),
                          queries=[{"query_id": "q1", "sql": v, "status": "OK", "error_class": None}])
