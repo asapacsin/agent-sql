@@ -4,4 +4,4 @@ system_id: b1_sc
 kind: b1_sc
 prompts: {sql: b1/sql.v1.md, composer: shared/composer.v1.md}
 b1_top_k_tables: 5
-flags: {samples: 4, calibrated: false}  # val: 17,078.5 vs A1 17,788.5 tokens (0.96); recheck vs A1 v3
+flags: {samples: 4, calibrated: true}  # val: 17,078.5 vs A1 v4 16,730.5 median tokens (ratio 1.02, within ±15%)

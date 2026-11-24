@@ -33,3 +33,16 @@
 
 - Results from one run only; no variance estimate (M12) on val.
 - The A1/A2 numbers will change if the owner chooses a scoring or protocol change for the final query.
+
+## v4 (after A23 answer projection and A24 cost guards) — supersedes v1–v3
+
+Commit `a6f59de`, `configs/experiments/val_calibration.yaml` (`val_calibration_v4`), 480/480 task-runs, 0 runner errors, $4.86. Dev-only; not a reported result.
+
+| system | M03 success (combined, n=120) | LLM calls/task | median tokens/task (incl. cache reads) | cost/task $ |
+| --- | --- | --- | --- | --- |
+| B0 | 0.742 | 1.16 | 3,717 | 0.0034 |
+| B1 | 0.742 | 1.17 | 4,408 | 0.0040 |
+| A1 | 0.708 | 3.24 | 16,731 | 0.0106 |
+| A2 | 0.600 | 7.08 | 42,436 | 0.0225 |
+
+B1-SC (samples=4): median 17,078.5 tokens vs A1 16,730.5 (ratio 1.02) — compute-matched. On val, neither agent beats the one-shot baselines; A2 has the lowest valid-failure rate (M11 0.067) but the highest silent-wrong rate (S05 0.292). Full tables: `results/val_calibration_v4/report.md`.

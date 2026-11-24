@@ -609,7 +609,7 @@
     {
       "id": "p4-a2-val",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 300,
       "action": "Live A2 calibration on val; choose B1-SC n",
       "depends_on": [
@@ -623,9 +623,10 @@
       "contract_path": "contracts/phase-4.json",
       "phase": 4,
       "evidence": [
-        "IN PROGRESS (not PASS): B1-SC samples=4 calibrated on val: median 17,078.5 tokens/task vs A1 17,788.5 (ratio 0.96, within \u00b115%); results/b1sc_calibration, M03 0.75, $1.58",
-        "val_calibration_v3 (answer projection, A23) stopped by owner at 197/480 predictions; resumable with: agent-sql run --experiment configs/experiments/val_calibration.yaml --output results/val_calibration_v3 --score",
-        "B1-SC samples must be re-checked against A1 v3 tokens before setting calibrated: true"
+        "val_calibration_v4 (after A24, commit a6f59de): 480/480, 0 errors, $4.86; combined M03 B0 0.742, B1 0.742, A1 0.708, A2 0.600; LLM calls/task A1 3.24, A2 7.08 (results/val_calibration_v4/report.md)",
+        "R5 smoke before scale: results/smoke_a24 (A1, A2, 10 tasks each, 0 errors, $0.14)",
+        "B1-SC samples=4 confirmed: median 17,078.5 tokens vs A1 v4 16,730.5 (ratio 1.02); calibrated: true",
+        "val v3 (197/480, pre-A24) superseded by v4"
       ]
     },
     {
