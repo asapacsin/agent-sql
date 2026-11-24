@@ -1,0 +1,10 @@
+# Dev-time calibration of B1-SC `samples` (BASELINES.md B1-SC; p4-a2-val): median input+output tokens per task
+# must match A1's on val within +/-15%. A1 reference: results/val_calibration_v2 (median 17,788.5 tokens/task).
+experiment_id: b1sc_calibration
+datasets: [{dataset: bird, split: val}, {dataset: bi, split: val}]
+systems: [b1_sc]
+runs: 1
+bi_engine: postgres
+llm: {mode: record, cache: results/llm_cache_val.jsonl}
+concurrency: 4
+max_experiment_usd: 10.0
