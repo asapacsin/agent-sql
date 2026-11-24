@@ -236,7 +236,7 @@
     {
       "id": "p1-live-smoke",
       "owner": "AUTONOMOUS",
-      "status": "BLOCKED_EXTERNAL",
+      "status": "PASS",
       "priority": 110,
       "action": "Live B0 run on BI-dev in record mode; commit replay fixture subset",
       "depends_on": [
@@ -248,7 +248,10 @@
       ],
       "contract_path": "contracts/phase-1.json",
       "phase": 1,
-      "blocked_by": "h-provide-api-key: no Anthropic credential in the execution environment"
+      "evidence": [
+        "gate live-smoke-b0: pytest tests/live -m live -k b0 -> 1 passed (844 s) on 1d1f678, Qwen via Model Studio, 20/20 BI-dev tasks, no FAILED_PROVIDER",
+        "NOT_VERIFIED: replay fixture subset from this run not yet committed; independent review pending"
+      ]
     },
     {
       "id": "p1-gate",
