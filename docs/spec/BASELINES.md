@@ -65,6 +65,8 @@ Identical to B0, except step 2 uses retrieved context:
 - Deterministic: same input → same context. Retrieval recall is measured separately (S03).
 - Prompt `prompts/b1/sql.v1.md`.
 
+**Final-query column rule (CHANGELOG A21):** all systems are told to return the columns the question needs. A1/A2 prompts v2 add an explicit "nothing else (no extra id, date, score or context columns)" clause, because agents run exploratory queries whose context columns otherwise leak into the final query; B0/B1 write a single query and keep the shorter wording. This wording difference is a disclosed asymmetry.
+
 ### A1 — Executable SQL Agent
 
 Bounded tool-calling loop ([ARCHITECTURE.md](ARCHITECTURE.md) §4.2). Prompt `prompts/a1/system.v1.md`.

@@ -296,8 +296,8 @@
       "contract_path": "contracts/phase-2.json",
       "phase": 2,
       "evidence": [
-        "phase-2 gates on clean commit 4dabe4b: all 12 PASS incl. bird-manifest, bird-splits-frozen, bird-parity (0/400 disagreements), bi-test-frozen",
-        "independent review of phase 2: pending"
+        "phase-2 gates on clean commit 2a12004: all PASS (scripts/run_gates.py), incl. integration-postgres 8 passed; integration-sqlite 2 skipped (FM2/FM3 variants not built in this container); bird-parity 0 disagreements over 350 tasks",
+        "independent review (separate reviewer, read-only) on 2a12004: phase 2 PASS"
       ]
     },
     {
@@ -312,8 +312,8 @@
       "contract_path": "contracts/phase-2.json",
       "phase": 2,
       "evidence": [
-        "phase-2 gates on clean commit 4dabe4b: all 12 PASS incl. bird-manifest, bird-splits-frozen, bird-parity (0/400 disagreements), bi-test-frozen",
-        "independent review of phase 2: pending"
+        "phase-2 gates on clean commit 2a12004: all PASS (scripts/run_gates.py), incl. integration-postgres 8 passed; integration-sqlite 2 skipped (FM2/FM3 variants not built in this container); bird-parity 0 disagreements over 350 tasks",
+        "independent review (separate reviewer, read-only) on 2a12004: phase 2 PASS"
       ]
     },
     {
@@ -328,8 +328,8 @@
       "contract_path": "contracts/phase-2.json",
       "phase": 2,
       "evidence": [
-        "phase-2 gates on clean commit 4dabe4b: all 12 PASS incl. bird-manifest, bird-splits-frozen, bird-parity (0/400 disagreements), bi-test-frozen",
-        "independent review of phase 2: pending"
+        "phase-2 gates on clean commit 2a12004: all PASS (scripts/run_gates.py), incl. integration-postgres 8 passed; integration-sqlite 2 skipped (FM2/FM3 variants not built in this container); bird-parity 0 disagreements over 350 tasks",
+        "independent review (separate reviewer, read-only) on 2a12004: phase 2 PASS"
       ]
     },
     {
@@ -344,8 +344,8 @@
       "contract_path": "contracts/phase-2.json",
       "phase": 2,
       "evidence": [
-        "phase-2 gates on clean commit 4dabe4b: all 12 PASS incl. bird-manifest, bird-splits-frozen, bird-parity (0/400 disagreements), bi-test-frozen",
-        "independent review of phase 2: pending"
+        "phase-2 gates on clean commit 2a12004: all PASS (scripts/run_gates.py), incl. integration-postgres 8 passed; integration-sqlite 2 skipped (FM2/FM3 variants not built in this container); bird-parity 0 disagreements over 350 tasks",
+        "independent review (separate reviewer, read-only) on 2a12004: phase 2 PASS"
       ]
     },
     {
@@ -360,8 +360,8 @@
       "contract_path": "contracts/phase-2.json",
       "phase": 2,
       "evidence": [
-        "phase-2 gates on clean commit 4dabe4b: all 12 PASS incl. bird-manifest, bird-splits-frozen, bird-parity (0/400 disagreements), bi-test-frozen",
-        "independent review of phase 2: pending"
+        "phase-2 gates on clean commit 2a12004: all PASS (scripts/run_gates.py), incl. integration-postgres 8 passed; integration-sqlite 2 skipped (FM2/FM3 variants not built in this container); bird-parity 0 disagreements over 350 tasks",
+        "independent review (separate reviewer, read-only) on 2a12004: phase 2 PASS"
       ]
     },
     {
@@ -376,8 +376,8 @@
       "contract_path": "contracts/phase-2.json",
       "phase": 2,
       "evidence": [
-        "phase-2 gates on clean commit 4dabe4b: all 12 PASS incl. bird-manifest, bird-splits-frozen, bird-parity (0/400 disagreements), bi-test-frozen",
-        "independent review of phase 2: pending"
+        "phase-2 gates on clean commit 2a12004: all PASS (scripts/run_gates.py), incl. integration-postgres 8 passed; integration-sqlite 2 skipped (FM2/FM3 variants not built in this container); bird-parity 0 disagreements over 350 tasks",
+        "independent review (separate reviewer, read-only) on 2a12004: phase 2 PASS"
       ]
     },
     {
@@ -420,43 +420,55 @@
     {
       "id": "p3-tools",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 210,
       "action": "Tool registry and the 8 data tools plus submit_answer",
       "depends_on": [
         "p2-b1"
       ],
       "contract_path": "contracts/phase-3.json",
-      "phase": 3
+      "phase": 3,
+      "evidence": [
+        "phase-3 gates on clean commit 2a12004: all PASS (scripts/run_gates.py), incl. integration-postgres 8 passed; integration-sqlite 2 skipped (FM2/FM3 variants not built in this container)",
+        "independent review (separate reviewer, read-only) on 2a12004: phase 3 PASS"
+      ]
     },
     {
       "id": "p3-orchestrator",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 220,
       "action": "Bounded state machine, budget guard, FINALIZE, answer contract",
       "depends_on": [
         "p3-tools"
       ],
       "contract_path": "contracts/phase-3.json",
-      "phase": 3
+      "phase": 3,
+      "evidence": [
+        "phase-3 gates on clean commit 2a12004: all PASS (scripts/run_gates.py), incl. integration-postgres 8 passed; integration-sqlite 2 skipped (FM2/FM3 variants not built in this container)",
+        "independent review (separate reviewer, read-only) on 2a12004: phase 3 PASS"
+      ]
     },
     {
       "id": "p3-a1",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 230,
       "action": "A1 system, prompt, and A1 ablation flags",
       "depends_on": [
         "p3-orchestrator"
       ],
       "contract_path": "contracts/phase-3.json",
-      "phase": 3
+      "phase": 3,
+      "evidence": [
+        "phase-3 gates on clean commit 2a12004: all PASS (scripts/run_gates.py), incl. integration-postgres 8 passed; integration-sqlite 2 skipped (FM2/FM3 variants not built in this container)",
+        "independent review (separate reviewer, read-only) on 2a12004: phase 3 PASS"
+      ]
     },
     {
       "id": "p3-fault-injection",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 240,
       "action": "FM1 wrapper, drift and casing DB variants, E3 configs",
       "depends_on": [
@@ -464,7 +476,11 @@
         "p2-bi-test-freeze"
       ],
       "contract_path": "contracts/phase-3.json",
-      "phase": 3
+      "phase": 3,
+      "evidence": [
+        "phase-3 gates on clean commit 2a12004: all PASS (scripts/run_gates.py), incl. integration-postgres 8 passed; integration-sqlite 2 skipped (FM2/FM3 variants not built in this container)",
+        "independent review (separate reviewer, read-only) on 2a12004: phase 3 PASS"
+      ]
     },
     {
       "id": "p3-a1-val",
@@ -501,38 +517,50 @@
     {
       "id": "p4-verification",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 270,
       "action": "V1-V8, grounding, metric conformance, reconciliation, post-hoc hook",
       "depends_on": [
         "p3-a1"
       ],
       "contract_path": "contracts/phase-4.json",
-      "phase": 4
+      "phase": 4,
+      "evidence": [
+        "phase-4 gates on clean commit 2a12004: all PASS (scripts/run_gates.py), incl. integration-postgres 8 passed; integration-sqlite 2 skipped (FM2/FM3 variants not built in this container)",
+        "independent review (separate reviewer, read-only) on 2a12004: phase 4 PASS"
+      ]
     },
     {
       "id": "p4-a2",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 280,
       "action": "A2 plan/step/inspect/verify/grounding state machine and prompts",
       "depends_on": [
         "p4-verification"
       ],
       "contract_path": "contracts/phase-4.json",
-      "phase": 4
+      "phase": 4,
+      "evidence": [
+        "phase-4 gates on clean commit 2a12004: all PASS (scripts/run_gates.py), incl. integration-postgres 8 passed; integration-sqlite 2 skipped (FM2/FM3 variants not built in this container)",
+        "independent review (separate reviewer, read-only) on 2a12004: phase 4 PASS"
+      ]
     },
     {
       "id": "p4-ablations",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 290,
       "action": "planning/verification flags, B1-SC, ablation configs AB1-AB9",
       "depends_on": [
         "p4-a2"
       ],
       "contract_path": "contracts/phase-4.json",
-      "phase": 4
+      "phase": 4,
+      "evidence": [
+        "phase-4 gates on clean commit 2a12004: all PASS (scripts/run_gates.py), incl. integration-postgres 8 passed; integration-sqlite 2 skipped (FM2/FM3 variants not built in this container)",
+        "independent review (separate reviewer, read-only) on 2a12004: phase 4 PASS"
+      ]
     },
     {
       "id": "p4-a2-val",
@@ -568,26 +596,34 @@
     {
       "id": "p5-ui",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 320,
       "action": "Streamlit Ask, Compare, Trace pages with deterministic charts",
       "depends_on": [
         "p4-a2"
       ],
       "contract_path": "contracts/phase-5.json",
-      "phase": 5
+      "phase": 5,
+      "evidence": [
+        "phase-5 gates on clean commit 2a12004: all PASS (scripts/run_gates.py), incl. integration-postgres 8 passed; integration-sqlite 2 skipped (FM2/FM3 variants not built in this container)",
+        "independent review (separate reviewer, read-only) on 2a12004: phase 5 PASS"
+      ]
     },
     {
       "id": "p5-gate",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 330,
       "action": "Run all required gates in contracts/phase-5.json on a clean commit and obtain independent review",
       "depends_on": [
         "p5-ui"
       ],
       "contract_path": "contracts/phase-5.json",
-      "phase": 5
+      "phase": 5,
+      "evidence": [
+        "phase-5 gates on clean commit 2a12004: all PASS (scripts/run_gates.py), incl. integration-postgres 8 passed; integration-sqlite 2 skipped (FM2/FM3 variants not built in this container)",
+        "independent review (separate reviewer, read-only) on 2a12004: phase 5 PASS"
+      ]
     },
     {
       "id": "p6-pilot",
