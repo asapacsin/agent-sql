@@ -621,7 +621,12 @@
         "anthropic_api"
       ],
       "contract_path": "contracts/phase-4.json",
-      "phase": 4
+      "phase": 4,
+      "evidence": [
+        "IN PROGRESS (not PASS): B1-SC samples=4 calibrated on val: median 17,078.5 tokens/task vs A1 17,788.5 (ratio 0.96, within \u00b115%); results/b1sc_calibration, M03 0.75, $1.58",
+        "val_calibration_v3 (answer projection, A23) stopped by owner at 97/480 predictions; resumable with: agent-sql run --experiment configs/experiments/val_calibration.yaml --output results/val_calibration_v3 --score",
+        "B1-SC samples must be re-checked against A1 v3 tokens before setting calibrated: true"
+      ]
     },
     {
       "id": "p4-gate",
