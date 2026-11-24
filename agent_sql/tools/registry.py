@@ -40,6 +40,42 @@ _TYPES = {"string": str, "integer": int, "number": (int, float), "boolean": bool
           "null": type(None)}
 
 
+def coerce_args(schema: dict, value: Any, path: str = "$") -> tuple[Any, list[str]]:
+    """Deterministic, logged repair of one provider quirk: an array/object argument sent as a JSON string (seen with
+    Qwen on OpenAI-compatible tool calls). Only a string that parses to exactly the expected container type is
+    replaced; everything else is left for strict validation to reject."""
+    import json
+
+    types = schema.get("type")
+    tlist = types if isinstance(types, list) else [types]
+    if isinstance(value, str) and ("array" in tlist or "object" in tlist) and "string" not in tlist:
+        try:
+            parsed = json.loads(value)
+        except ValueError:
+            return value, []
+        if ("array" in tlist and isinstance(parsed, list)) or ("object" in tlist and isinstance(parsed, dict)):
+            inner, paths = coerce_args(schema, parsed, path)
+            return inner, [path, *paths]
+        return value, []
+    paths: list[str] = []
+    if isinstance(value, dict):
+        props = schema.get("properties", {})
+        out = dict(value)
+        for key, sub in props.items():
+            if key in out:
+                out[key], p = coerce_args(sub, out[key], f"{path}.{key}")
+                paths += p
+        return out, paths
+    if isinstance(value, list) and isinstance(schema.get("items"), dict):
+        out_l = []
+        for i, v in enumerate(value):
+            nv, p = coerce_args(schema["items"], v, f"{path}[{i}]")
+            out_l.append(nv)
+            paths += p
+        return out_l, paths
+    return value, paths
+
+
 def validate_args(schema: dict, value: Any, path: str = "$") -> None:
     """Minimal JSON-schema validator for the subset our tool schemas use (strict mode semantics)."""
     types = schema.get("type")

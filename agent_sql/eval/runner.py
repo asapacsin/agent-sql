@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import random
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -109,6 +110,16 @@ class RunOutcome:
     errors: list[str] = field(default_factory=list)
 
 
+def _pid_alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
 class Runner:
     def __init__(self, cfg: ExperimentConfig, *, llm: LLMClient | None = None, replay: bool = False,
                  allow_dirty: bool = False, out_dir: Path | None = None,
@@ -181,6 +192,26 @@ class Runner:
                     raise SystemExit("RetailCo-test database differs from the frozen snapshot; refusing to run")
 
     def run(self) -> RunOutcome:
+        """One runner per output directory: a second concurrent runner is refused (val calibration incident: two
+        processes on one directory ran every task twice and doubled the provider bill)."""
+        self.out.mkdir(parents=True, exist_ok=True)
+        lock = self.out / ".runner.lock"
+        try:
+            fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            pid = lock.read_text().strip()
+            if pid.isdigit() and _pid_alive(int(pid)):
+                raise SystemExit(f"another runner (pid {pid}) is writing {self.out}; refusing to start") from None
+            lock.unlink(missing_ok=True)  # stale lock from a dead process
+            fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        os.write(fd, str(os.getpid()).encode())
+        os.close(fd)
+        try:
+            return self._run()
+        finally:
+            lock.unlink(missing_ok=True)
+
+    def _run(self) -> RunOutcome:
         tasks = [t for ref in self.cfg.datasets for t in load_tasks(ref)]
         sys_cfgs = {sid: load_system(sid) for sid in self.cfg.systems}
         from agent_sql.systems.base import load_prompts

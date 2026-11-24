@@ -23,7 +23,7 @@ from agent_sql.systems.contracts import (
     MetricInterpretation,
     Uncertainty,
 )
-from agent_sql.tools.registry import ArgError, ToolDef, validate_args
+from agent_sql.tools.registry import ArgError, ToolDef, coerce_args, validate_args
 from agent_sql.tools.sql_tools import CONTROL_TOOLS, DATA_TOOLS
 
 FAILURE_STATUSES = {"ERROR", "TIMEOUT", "REJECTED"}
@@ -60,6 +60,7 @@ class LoopState:
     scope_failures: int = 0
     nudges: int = 0
     contract_corrections: int = 0
+    invalid_control_calls: int = 0
     pending_finalize: str | None = None
 
 
@@ -155,6 +156,9 @@ def apply_answer_projection(answer: FinalAnswer, ctx: RunContext) -> FinalAnswer
     answer.tables = sorted(set(answer.tables) | {proj.query_id})
     answer.final_query_id = proj.query_id
     return answer
+
+
+MAX_INVALID_CONTROL_CALLS = 3
 
 
 class AgentLoop:
@@ -254,6 +258,9 @@ class AgentLoop:
                    "allowed": sorted(tools)}
             ctx.trace.emit("tool_result", tool=name, status="TOOL_NOT_ALLOWED")
             return out, True
+        args, coerced = coerce_args(tool.schema, args)
+        if coerced:
+            ctx.trace.emit("validation", check_id="ARGS_COERCED", result="PASS", detail=f"{name}: {coerced}")
         try:
             validate_args(tool.schema, args)
         except ArgError as e:
@@ -261,6 +268,13 @@ class AgentLoop:
                 ctx.tool_calls += 1
                 self._check_tool_budget()
             ctx.trace.emit("tool_result", tool=name, status="INVALID_ARGS", summary=str(e))
+            if not tool.data_tool:
+                # control tools are not counted as tool calls; without this guard a model that keeps resending the
+                # same invalid submit_answer burns the whole LLM-call budget (val v3 incident).
+                self.state.invalid_control_calls += 1
+                if self.state.invalid_control_calls >= MAX_INVALID_CONTROL_CALLS:
+                    raise Terminate(FinalAnswer.failure(
+                        "FAILED_INVALID_OUTPUT", f"invalid {name} arguments {self.state.invalid_control_calls} times: {e}")) from e
             return {"status": "INVALID_ARGS", "detail": str(e)}, True
         if not tool.data_tool:
             return self._control(name, args)
@@ -338,11 +352,12 @@ class AgentLoop:
         for use in resp.tool_uses():
             if use["name"] != "submit_answer":
                 continue
+            args, _ = coerce_args(CONTROL_TOOLS["submit_answer"].schema, use.get("input") or {})
             try:
-                validate_args(CONTROL_TOOLS["submit_answer"].schema, use.get("input") or {})
+                validate_args(CONTROL_TOOLS["submit_answer"].schema, args)
             except ArgError:
                 break
-            answer = answer_from_args(use["input"])
+            answer = answer_from_args(args)
             if not contract_problems(answer, ctx, require_answer_columns=False):
                 answer.limitations.append(f"answered under budget limit ({reason})")
                 return answer

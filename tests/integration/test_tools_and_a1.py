@@ -197,3 +197,14 @@ def _result_for(llm, tool_use_id):  # noqa: ANN001, ANN202
                 if b.get("tool_use_id") == tool_use_id:
                     return b["content"]
     raise AssertionError(tool_use_id)
+
+
+def test_repeated_invalid_submit_answer_terminates_quickly(bi_dev_sqlite):
+    """Val v3 incident: an invalid submit_answer resent forever burned the LLM-call budget. The controller now stops
+    after 3 invalid control calls with FAILED_INVALID_OUTPUT."""
+    bad = {**_answer(), "answer_columns": 123}
+    llm = FakeLLM([tool_call("execute_readonly_sql", {"purpose": "p", "sql": "SELECT 1 AS x", "label": None}, "t1")]
+                  + [tool_call("submit_answer", bad, f"s{i}") for i in range(10)], model="claude-opus-5-5")
+    res = A1System(_rt(bi_dev_sqlite, llm), load_system("a1")).run(TaskInput(task_id="t", db_id="retailco_dev", question="q"))
+    assert res.answer.status == "FAILED_INVALID_OUTPUT"
+    assert res.counters.llm_calls <= 4
