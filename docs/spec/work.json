@@ -717,7 +717,7 @@
     {
       "id": "p6-main",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "BLOCKED_EXTERNAL",
       "priority": 360,
       "action": "E1 main comparison: 4 systems x 200 tasks x 3 runs",
       "depends_on": [
@@ -727,7 +727,11 @@
         "anthropic_api"
       ],
       "contract_path": "contracts/phase-6.json",
-      "phase": 6
+      "phase": 6,
+      "blocked_by": "Provider access revoked mid-run (2026-11-24): every call returns AccessDenied.Unpurchased for qwen3.7-plus-2026-05-26. Runs stopped; partial outputs kept in results/. Needs owner to restore model access, then re-run FAILED_PROVIDER task-runs as a logged provider-incident re-run (EXPERIMENTS §6 step 6).",
+      "evidence": [
+        "results/e1_main: 1245/2400 predictions, 708 FAILED_PROVIDER from line 210 onward"
+      ]
     },
     {
       "id": "p6-ablations",
@@ -747,7 +751,7 @@
     {
       "id": "p6-robustness",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "BLOCKED_EXTERNAL",
       "priority": 380,
       "action": "E3 fault-injection suite",
       "depends_on": [
@@ -758,12 +762,16 @@
         "anthropic_api"
       ],
       "contract_path": "contracts/phase-6.json",
-      "phase": 6
+      "phase": 6,
+      "blocked_by": "Provider access revoked mid-run (2026-11-24): every call returns AccessDenied.Unpurchased for qwen3.7-plus-2026-05-26. Runs stopped; partial outputs kept in results/. Needs owner to restore model access, then re-run FAILED_PROVIDER task-runs as a logged provider-incident re-run (EXPERIMENTS §6 step 6).",
+      "evidence": [
+        "e3_fm1 120/120 clean; e3_fm2 10 FAILED_PROVIDER; e3_fm3 116 FAILED_PROVIDER"
+      ]
     },
     {
       "id": "p6-cross-engine",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "BLOCKED_EXTERNAL",
       "priority": 390,
       "action": "E4 exploratory cross-engine check",
       "depends_on": [
@@ -773,7 +781,11 @@
         "anthropic_api"
       ],
       "contract_path": "contracts/phase-6.json",
-      "phase": 6
+      "phase": 6,
+      "blocked_by": "Provider access revoked mid-run (2026-11-24): every call returns AccessDenied.Unpurchased for qwen3.7-plus-2026-05-26. Runs stopped; partial outputs kept in results/. Needs owner to restore model access, then re-run FAILED_PROVIDER task-runs as a logged provider-incident re-run (EXPERIMENTS §6 step 6).",
+      "evidence": [
+        "results/e4_cross_engine: 100 predictions, 14 FAILED_PROVIDER, stopped"
+      ]
     },
     {
       "id": "p6-failure-analysis",
