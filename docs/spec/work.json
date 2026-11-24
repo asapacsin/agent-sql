@@ -582,7 +582,7 @@
     {
       "id": "h-decide-final-query",
       "owner": "HUMAN_DECISION",
-      "status": "HUMAN_REQUIRED",
+      "status": "PASS",
       "priority": 295,
       "phase": 4,
       "action": "Decide how the A1/A2 final query is scored when agents add supporting columns that strict BIRD EX rejects",
@@ -601,7 +601,10 @@
         ],
         "evidence": "BIRD-val M03 A1 0.44, A2 0.49 vs B0 0.74 (prompts v2); v1 0.30/0.34",
         "cost_of_delay": "p4-a2-val, E0 pilot and all Phase 6 runs wait"
-      }
+      },
+      "evidence": [
+        "Owner direction 2026-11-24: the workflow must guarantee the output format (not a prompt); implemented as deterministic answer projection, CHANGELOG A23"
+      ]
     },
     {
       "id": "p4-a2-val",

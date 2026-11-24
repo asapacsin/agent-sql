@@ -134,7 +134,9 @@ Input: `{"step_id": str, "query_id": str | null, "summary": str (≤ 300), "unan
 
 ### `submit_answer` (A1, A2)
 
-Input: the `FinalAnswer` fields the model controls: `status` (`ANSWERED` or `INSUFFICIENT_DATA` only; failure statuses are set by the controller), `answer_text`, `final_query_id`, `claims`, `tables`, `charts`, `metric_interpretations`, `assumptions`, `limitations`, `uncertainty`. The controller fills `validation` and enforces the answer contract ([ARCHITECTURE.md](ARCHITECTURE.md) §4.2).
+Input: the `FinalAnswer` fields the model controls: `status` (`ANSWERED` or `INSUFFICIENT_DATA` only; failure statuses are set by the controller), `answer_text`, `final_query_id`, `answer_columns`, `claims`, `tables`, `charts`, `metric_interpretations`, `assumptions`, `limitations`, `uncertainty`. The controller fills `validation` and enforces the answer contract ([ARCHITECTURE.md](ARCHITECTURE.md) §4.2).
+
+**Answer projection (CHANGELOG A23).** With `status = ANSWERED`, `answer_columns` is required: the columns of `final_query_id` that directly answer the question, in answer order (unknown, repeated or ambiguous duplicate column names are rejected once with feedback, like other contract violations; the budget FINALIZE path accepts a missing list). After the loop ends (and after A2 verification), the controller deterministically builds `SELECT <answer_columns> FROM (<final query>) AS answer_src`, runs it through the same validator and read-only executor, and makes that projection the `final_query_id` that is scored. The model only chooses columns; it cannot change the analysis at this step. Claims keep citing any executed query.
 
 ## 4. SQL safety policy (deterministic, `agent_sql/safety/validator.py`)
 

@@ -54,6 +54,7 @@ def random_action(rng: random.Random, i: int) -> dict:
                                                      "entities": [], "query_id": rng.choice([qid, None]),
                                                      "row_index": rng.choice([0, 3, None]), "column": "n"}]
             calls.append(("submit_answer", {"status": status, "answer_text": "a", "final_query_id": qid,
+                                            "answer_columns": rng.choice([["n"], None, ["missing"]]),
                                             "claims": claims, "charts": [], "metric_interpretations": [],
                                             "assumptions": [], "limitations": [],
                                             "uncertainty": {"level": "low", "reasons": []}}, cid))

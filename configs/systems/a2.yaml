@@ -1,6 +1,6 @@
 system_id: a2
 kind: a2
-prompts: {plan: a2/plan.v1.md, system: a2/system.v2.md}
+prompts: {plan: a2/plan.v1.md, system: a2/system.v3.md}
 budgets:
   max_llm_calls: 24
   max_tool_calls: 30

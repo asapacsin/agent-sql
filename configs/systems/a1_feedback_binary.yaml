@@ -2,7 +2,7 @@
 system_id: a1_feedback_binary
 kind: a1
 prompts:
-  system: a1/system.v2.md
+  system: a1/system.v3.md
 budgets:
   max_llm_calls: 12
   max_tool_calls: 15

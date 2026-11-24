@@ -75,20 +75,23 @@ def answer_from_args(args: dict) -> FinalAnswer:
     tables = sorted({c.evidence.query_id for c in claims if c.evidence} | ({final_qid} if final_qid else set()))
     unc = args.get("uncertainty") or {"level": "medium", "reasons": []}
     return FinalAnswer(status=args["status"], answer_text=str(args.get("answer_text", ""))[:1200],
-                       final_query_id=final_qid, claims=claims, tables=tables,
+                       final_query_id=final_qid, answer_columns=args.get("answer_columns") or None,
+                       claims=claims, tables=tables,
                        charts=[ChartHint(**ch) for ch in args.get("charts") or []],
                        metric_interpretations=[MetricInterpretation(**m) for m in args.get("metric_interpretations") or []],
                        assumptions=list(args.get("assumptions") or []), limitations=list(args.get("limitations") or []),
                        uncertainty=Uncertainty(**unc))
 
 
-def contract_problems(answer: FinalAnswer, ctx: RunContext) -> list[str]:
+def contract_problems(answer: FinalAnswer, ctx: RunContext, require_answer_columns: bool = True) -> list[str]:
     """Deterministic ANSWER_CHECK (not a correctness judgement)."""
     problems = []
     if answer.status == "ANSWERED":
         rec = ctx.store.get(answer.final_query_id) if answer.final_query_id else None
         if rec is None or not rec.ok:
             problems.append("final_query_id must reference a successful execute_readonly_sql result")
+        elif rec.result is not None:
+            problems += answer_column_problems(answer.answer_columns, rec.result.columns, require_answer_columns)
     for c in answer.claims:
         if c.is_numeric and answer.status != "ANSWERED":
             problems.append(f"{c.claim_id}: numeric claims are not allowed with status {answer.status}")
@@ -101,6 +104,57 @@ def contract_problems(answer: FinalAnswer, ctx: RunContext) -> list[str]:
                 problems.append(f"{c.claim_id}: evidence {c.evidence.query_id}[{c.evidence.row_index}]."
                                 f"{c.evidence.column} does not exist")
     return problems
+
+
+def answer_column_problems(chosen: list[str] | None, columns: list[str], required: bool) -> list[str]:
+    if not chosen:
+        return (["answer_columns is required with status ANSWERED: list the columns of final_query_id that directly "
+                 f"answer the question (available: {columns})"] if required else [])
+    out = []
+    for c in chosen:
+        if c not in columns:
+            out.append(f"answer_columns: {c!r} is not a column of final_query_id (available: {columns})")
+        elif columns.count(c) > 1:
+            out.append(f"answer_columns: {c!r} appears more than once in final_query_id; re-run it with unique aliases")
+    if len(set(chosen)) != len(chosen):
+        out.append("answer_columns must not repeat a column")
+    return out
+
+
+def _quote(name: str) -> str:
+    return '"' + name.replace('"', '""') + '"'
+
+
+def projection_sql(sql: str, columns: list[str]) -> str:
+    """Deterministic answer projection: the final query is kept verbatim as a derived table."""
+    body = sql.strip().rstrip(";").rstrip()
+    return f"SELECT {', '.join(_quote(c) for c in columns)}\nFROM (\n{body}\n) AS answer_src"
+
+
+def apply_answer_projection(answer: FinalAnswer, ctx: RunContext) -> FinalAnswer:
+    """ANSWER_PROJECTION (CHANGELOG A23): the model chose `answer_columns`; code builds and runs the projection so the
+    scored final query returns exactly those columns. The analysis itself (the original query) is not changed."""
+    if answer.status != "ANSWERED" or not answer.answer_columns or not answer.final_query_id:
+        return answer
+    rec = ctx.store.get(answer.final_query_id)
+    if rec is None or not rec.ok or rec.result is None:
+        return answer
+    if answer_column_problems(answer.answer_columns, rec.result.columns, True):
+        ctx.trace.emit("validation", check_id="ANSWER_PROJECTION", result="SKIP", detail="invalid answer_columns")
+        return answer
+    if list(answer.answer_columns) == list(rec.result.columns):
+        ctx.trace.emit("validation", check_id="ANSWER_PROJECTION", result="PASS", detail="already exact")
+        return answer
+    proj = ctx.executor.run(projection_sql(rec.sql, answer.answer_columns), ctx.store, "answer_projection")
+    ctx.trace.emit("validation", check_id="ANSWER_PROJECTION", result="PASS" if proj.ok else "FAIL",
+                   detail=f"{answer.final_query_id} -> {proj.query_id} columns={answer.answer_columns}"
+                   + ("" if proj.ok else f" ({proj.error_class}: {proj.message})"))
+    if not proj.ok:
+        answer.limitations.append("answer projection failed; the full final query is reported")
+        return answer
+    answer.tables = sorted(set(answer.tables) | {proj.query_id})
+    answer.final_query_id = proj.query_id
+    return answer
 
 
 class AgentLoop:
@@ -289,7 +343,7 @@ class AgentLoop:
             except ArgError:
                 break
             answer = answer_from_args(use["input"])
-            if not contract_problems(answer, ctx):
+            if not contract_problems(answer, ctx, require_answer_columns=False):
                 answer.limitations.append(f"answered under budget limit ({reason})")
                 return answer
         return FinalAnswer.failure(reason, "no valid answer within budget")

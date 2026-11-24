@@ -65,7 +65,7 @@ Identical to B0, except step 2 uses retrieved context:
 - Deterministic: same input → same context. Retrieval recall is measured separately (S03).
 - Prompt `prompts/b1/sql.v1.md`.
 
-**Final-query column rule (CHANGELOG A21):** all systems are told to return the columns the question needs. A1/A2 prompts v2 add an explicit "nothing else (no extra id, date, score or context columns)" clause, because agents run exploratory queries whose context columns otherwise leak into the final query; B0/B1 write a single query and keep the shorter wording. This wording difference is a disclosed asymmetry.
+**Final-query columns (CHANGELOG A21, A23):** all systems must return the columns the question needs. B0/B1 write one query and are told so in the prompt. A1/A2 ground claims in supporting columns, so the answer contract enforces it in code: the agent names `answer_columns` in `submit_answer` and the controller projects the final query onto them ([TOOLS.md](TOOLS.md) `submit_answer`). Prompts v3 describe the field.
 
 ### A1 — Executable SQL Agent
 

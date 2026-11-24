@@ -80,6 +80,9 @@ class FinalAnswer(BaseModel):
     status: Status
     answer_text: str = Field(default="", max_length=1200)
     final_query_id: str | None = None
+    # columns of final_query_id that directly answer the question (A1/A2; CHANGELOG A23). The controller projects
+    # the final query onto them deterministically; the projected query becomes final_query_id.
+    answer_columns: list[str] | None = None
     claims: list[Claim] = Field(default_factory=list)
     tables: list[str] = Field(default_factory=list)
     charts: list[ChartHint] = Field(default_factory=list)

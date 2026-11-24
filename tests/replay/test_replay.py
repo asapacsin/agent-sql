@@ -63,7 +63,7 @@ def a1_script(req, i):
         return tool_call("execute_readonly_sql", {"purpose": "p", "sql": "SELECT COUNT(*) AS n FROM orders",
                                                   "label": None}, f"t{i}")
     return tool_call("submit_answer", {"status": "ANSWERED", "answer_text": "a", "final_query_id": "q1",
-                                       "claims": [], "charts": [], "metric_interpretations": [], "assumptions": [],
+                                       "answer_columns": ["n"], "claims": [], "charts": [], "metric_interpretations": [], "assumptions": [],
                                        "limitations": [], "uncertainty": {"level": "low", "reasons": []}}, f"t{i}")
 
 

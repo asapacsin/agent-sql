@@ -279,9 +279,12 @@ CLAIM = obj({"text": S, "value": {"type": ["number", "string", "null"]}, "unit":
              "query_id": NS, "row_index": {"type": ["integer", "null"]}, "column": NS})
 SUBMIT_ANSWER = ToolDef(
     "submit_answer", "Submit the final answer. Every numeric claim must cite query_id, row_index and column of an "
-    "executed result. Use status INSUFFICIENT_DATA when the data cannot answer the question.",
+    "executed result. With status ANSWERED, answer_columns lists the columns of final_query_id that directly answer "
+    "the question, in answer order; the controller builds the scored answer from exactly those columns, and the other "
+    "columns stay available as evidence. Use status INSUFFICIENT_DATA when the data cannot answer the question.",
     obj({"status": {"type": "string", "enum": ["ANSWERED", "INSUFFICIENT_DATA"]}, "answer_text": S,
-         "final_query_id": NS, "claims": {"type": "array", "items": CLAIM},
+         "final_query_id": NS, "answer_columns": {"type": ["array", "null"], "items": S},
+         "claims": {"type": "array", "items": CLAIM},
          "charts": {"type": "array", "items": obj({"query_id": S, "kind": {"type": "string",
                                                                            "enum": ["bar", "line", "table"]},
                                                    "x": NS, "y": NS})},

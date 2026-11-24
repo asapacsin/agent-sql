@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from agent_sql.config.settings import SystemConfig
-from agent_sql.orchestration.agent_loop import AgentLoop, LoopLimits, user_message
+from agent_sql.orchestration.agent_loop import AgentLoop, LoopLimits, apply_answer_projection, user_message
 from agent_sql.systems.b1_retrieval import schema_index
 from agent_sql.systems.base import RunContext, Runtime, load_prompts, render_full_schema, task_context
 from agent_sql.systems.contracts import RunResult, TaskInput
@@ -63,4 +63,4 @@ class A1System:
                          data_tools=self.tool_names(), control_tools=list(self.control_tools), limits=self.limits(),
                          execution_feedback=self.flags["execution_feedback"])
         answer = loop.run(user_message(task.question, []))
-        return ctx.result(answer)
+        return ctx.result(apply_answer_projection(answer, ctx))

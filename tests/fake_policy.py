@@ -24,6 +24,7 @@ def _last_query_id(messages) -> str | None:  # noqa: ANN001
 
 def answer(qid):  # noqa: ANN001, ANN201
     return {"status": "ANSWERED", "answer_text": "Order counts by status.", "final_query_id": qid,
+            "answer_columns": ["status", "n"],
             "claims": [{"text": "orders by status", "value": None, "unit": None, "entities": [], "query_id": qid,
                         "row_index": 0, "column": "n"}], "charts": [], "metric_interpretations": [],
             "assumptions": [], "limitations": [], "uncertainty": {"level": "medium", "reasons": []}}

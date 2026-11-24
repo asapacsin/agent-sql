@@ -19,7 +19,7 @@
 | A1 | 0.44 [0.35, 0.54] | 0.60 [0.39, 0.78] | 17,789 | $1.34 | 1 tool budget |
 | A2 | 0.49 [0.39, 0.59] | 0.75 [0.53, 0.89] | 41,288 | $2.84 | 1 tool budget |
 
-1. **Extra-column effect (open owner decision `h-decide-final-query`).** With prompts v1, A1/A2 scored 0.30/0.34 on
+1. **Extra-column effect (resolved by CHANGELOG A23, answer projection in code).** With prompts v1, A1/A2 scored 0.30/0.34 on
    BIRD-val; every sampled A1 loss against B0 was an extra id/date/score/name column in the final query, which strict
    BIRD EX counts as wrong. Prompt v2 (A21) improved this to 0.44/0.49, but on the 29 BIRD-val tasks that B0 answers
    correctly and A2 does not, the sampled A2 final queries still add the supporting columns A2 cites as evidence.

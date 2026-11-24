@@ -10,7 +10,14 @@ from datetime import date
 
 from agent_sql.config.settings import SystemConfig
 from agent_sql.db.executor import ResultStore
-from agent_sql.orchestration.agent_loop import AgentLoop, Terminate, answer_from_args, contract_problems, user_message
+from agent_sql.orchestration.agent_loop import (
+    AgentLoop,
+    Terminate,
+    answer_from_args,
+    apply_answer_projection,
+    contract_problems,
+    user_message,
+)
 from agent_sql.systems.a1_agent import A1System
 from agent_sql.systems.base import RunContext, Runtime
 from agent_sql.systems.contracts import FinalAnswer, RunResult, TaskInput, ValidationCheck
@@ -302,4 +309,4 @@ class A2System(A1System):
         answer = loop.run(user_message(task.question, [start]))
         if self.flags["verification"] != "on":
             answer.validation.status = "NOT_RUN"
-        return ctx.result(answer)
+        return ctx.result(apply_answer_projection(answer, ctx))

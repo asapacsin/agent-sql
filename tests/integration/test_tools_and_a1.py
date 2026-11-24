@@ -51,8 +51,9 @@ def test_all_tools(bi_dev_any):
     assert rows["matched"] == 4 and not rows["mismatched"]
 
 
-def _answer(qid="q1"):
-    return {"status": "ANSWERED", "answer_text": "a", "final_query_id": qid, "claims": [], "charts": [],
+def _answer(qid="q1", cols=("x",)):
+    return {"status": "ANSWERED", "answer_text": "a", "final_query_id": qid, "answer_columns": list(cols),
+            "claims": [], "charts": [],
             "metric_interpretations": [], "assumptions": [], "limitations": [],
             "uncertainty": {"level": "low", "reasons": []}}
 
@@ -100,7 +101,7 @@ def test_fm1_transient_fault_b0_fails_a1_can_recover(bi_dev_sqlite):
         == "FAILED_EXECUTION"
     llm = FakeLLM([tool_call("execute_readonly_sql", {"purpose": "p", "sql": sql, "label": None}, "t1"),
                    tool_call("execute_readonly_sql", {"purpose": "retry", "sql": sql, "label": None}, "t2"),
-                   tool_call("submit_answer", _answer("q2"), "t3")], model="claude-opus-5-5")
+                   tool_call("submit_answer", _answer("q2", ("n",)), "t3")], model="claude-opus-5-5")
     rt2 = _rt(bi_dev_sqlite, llm)
     rt2.fault_hook = transient_fault_once()
     r = A1System(rt2, load_system("a1")).run(TaskInput(task_id="t", db_id="retailco_dev", question="q"))
@@ -129,7 +130,7 @@ def test_tool_exception_becomes_observation(bi_dev_sqlite):
                                                        "rel_tolerance": None}, "t2"),
                    tool_call("complete_step", {"step_id": "s1", "query_id": "q1", "summary": "s",
                                                "unanswerable_reason": None}, "t3"),
-                   tool_call("submit_answer", _answer(), "t4")], model="claude-opus-5-5")
+                   tool_call("submit_answer", _answer(cols=("status",)), "t4")], model="claude-opus-5-5")
     from agent_sql.systems.a2_planner import A2System
 
     cfg = load_system("a2")
@@ -146,7 +147,7 @@ def test_binary_feedback_hides_validate_and_metadata(bi_dev_sqlite):
     llm = FakeLLM([tool_call("validate_sql", {"purpose": "p", "sql": "SELECT nope FROM orders"}, "t1"),
                    tool_call("execute_readonly_sql", {"purpose": "p", "sql": "SELECT status FROM orders", "label": None}, "t2"),
                    tool_call("get_query_result_metadata", {"purpose": "p", "query_id": "q1", "columns": None}, "t3"),
-                   tool_call("submit_answer", _answer(), "t4")], model="claude-opus-5-5")
+                   tool_call("submit_answer", _answer(cols=("status",)), "t4")], model="claude-opus-5-5")
     A1System(_rt(bi_dev_sqlite, llm), binary).run(TaskInput(task_id="t", db_id="retailco_dev", question="q"))
     seen = " ".join(str(b["content"]) for m in llm.calls[-1].messages if m["role"] == "user"
                     and isinstance(m["content"], list) for b in m["content"])
@@ -180,7 +181,7 @@ def test_a2_tool_results_never_contain_canonical_totals(bi_dev_sqlite):
                    tool_call("execute_readonly_sql", {"purpose": "p", "sql": sql, "label": None}, "t2"),
                    tool_call("complete_step", {"step_id": "s1", "query_id": "q1", "summary": "s",
                                                "unanswerable_reason": None}, "t3"),
-                   tool_call("submit_answer", _answer(), "t4")], model="claude-opus-5-5")
+                   tool_call("submit_answer", _answer(cols=("region_name", "n")), "t4")], model="claude-opus-5-5")
     A2System(_rt(bi_dev_sqlite, llm), load_system("a2")).run(TaskInput(task_id="t", db_id="retailco_dev", question="q"))
     total = Executor(bi_dev_sqlite, statement_timeout_s=30, max_rows=1).run(
         load_registry().get("net_revenue").render_template("2025-07-01", "2025-10-01"), ResultStore()).result.rows[0][0]
