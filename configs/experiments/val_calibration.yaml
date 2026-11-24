@@ -1,7 +1,7 @@
 # Dev-time calibration on validation splits (p2-val-baselines, p3-a1-val, p4-a2-val): B0, B1, A1, A2, 1 run.
 # Output is a dev-only report, never a reported result. The shared LLM cache lets E0 (e0_pilot) reuse identical
 # requests; B1-SC is added in E0 after its `samples` is calibrated from these A1 token counts.
-experiment_id: val_calibration_v2
+experiment_id: val_calibration_v3
 datasets: [{dataset: bird, split: val}, {dataset: bi, split: val}]
 systems: [b0, b1, a1, a2]
 runs: 1
