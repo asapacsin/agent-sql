@@ -1,0 +1,10 @@
+# R5 smoke (EXPERIMENTS 9.3) after A24 guards: 5 tasks per dataset for the changed systems A1, A2.
+# Expected cost: (5+5) tasks x (22.7k + 50.3k) tokens ~= 0.73M tokens ~= $0.35. Dev-only.
+experiment_id: smoke_a24
+datasets: [{dataset: bird, split: val, limit: 5}, {dataset: bi, split: val, limit: 5}]
+systems: [a1, a2]
+runs: 1
+bi_engine: postgres
+llm: {mode: record, cache: results/llm_cache_val.jsonl}
+concurrency: 4
+max_experiment_usd: 2.0
