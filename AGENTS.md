@@ -30,6 +30,37 @@ Adapted from [asapacsin/ai-native-engineering](https://github.com/asapacsin/ai-n
 - State explicitly what was **not** verified.
 - No secrets in code, configs, traces, reports, commits, or prompts. Credentials come from the environment only.
 
+## Development cost discipline
+
+These rules cover the tokens a contributor (human with an AI assistant, or a coding agent) spends while **building** the project. The cost of **running** the systems under evaluation is governed separately by [EXPERIMENTS.md section 9](docs/spec/EXPERIMENTS.md#9-cost-model-and-cost-control) (R1–R9).
+
+**Context: load only what the task needs.**
+
+- **D1 Narrow entry.** Start from `docs/spec/work.json` (frontier item) and the active `docs/spec/contracts/phase-N.json`. Read only the spec sections those name; do not read all of `docs/spec/` at session start.
+- **D2 Search before read.** Locate code with grep/glob first, then read the relevant line range. Read a whole file only when editing most of it or when it is under ~300 lines.
+- **D3 Never load bulk artifacts.** Do not open datasets, databases, traces, `runs/`, replay fixtures or generated reports in full. Inspect with `head`, `wc`, `jq` on selected fields, or a short script that prints a summary. Frozen test artifacts stay unread (Engineering invariants).
+- **D4 Do not re-read.** A file already read or just edited in the session is not read again unless it changed outside the session.
+
+**Commands: keep output short.**
+
+- **D5 Quiet gates.** Run tests with `-q` (pytest) or without `-v` (unittest) during iteration, and target the affected test module first; run the full gate set once before finishing. Pipe long logs through `tail -n 50` or `grep` for the failing lines.
+- **D6 No live LLM calls during development.** Develop and test against FakeLLM and the record/replay cache (`tests/replay/`). A live model call is an experiment run and follows EXPERIMENTS §9.3 (smoke of 5 tasks, spend cap, one runner per directory).
+- **D7 Fail fast.** Stop a command as soon as its output shows the failure; do not wait for a long job to finish to read an error already printed.
+
+**Session shape.**
+
+- **D8 One work item per session.** A session takes one frontier item from `docs/spec/work.json` to a verdict. Start a new session (or clear context) for the next item; carry state through commits, `work.json` and the CHANGELOG, not through conversation history.
+- **D9 Sub-agents only for broad work.** Spawn a sub-agent only for a wide search or an independent review (Workflow step 4); each one starts cold and re-reads context. Do small lookups inline.
+- **D10 Plan before large edits.** For a change touching more than ~3 files, write the plan (files, seams, gates) first, then edit; do not explore by trial edits.
+- **D11 Bounded attempts apply to tokens too.** Workflow step 6 (3 attempts, escalate after 2 failures) is also the token stop rule: a failing approach is not retried with more context, it is written down and escalated.
+
+**Spec and code size.**
+
+- **D12 Short, linked documents.** Spec documents state a rule once and link to it elsewhere; no duplicated tables between documents. Record changes as one CHANGELOG row, not by rewriting history in other sections.
+- **D13 Small modules with one owner.** Keep modules focused (Workflow step 2) so a task needs few files in context.
+
+**Reporting.** A session that ends a work item states what it verified and what it did not (Evidence discipline). Token use is not a gate, but a session that hit D11 or needed more than one context window records why in the frontier item's notes.
+
 ## Gate entry points
 
 ```bash
