@@ -119,7 +119,7 @@ The project succeeds when:
 
 ## 9. Constraints
 
-- One pinned LLM and model version for all systems in an experiment (default `claude-opus-5-5`; [ARCHITECTURE.md](ARCHITECTURE.md) §5).
+- One pinned LLM and model version for all systems in an experiment (default `qwen3.7-plus-2026-05-26`; [ARCHITECTURE.md](ARCHITECTURE.md) §5).
 - Python 3.11+, SQLAlchemy 2.x, PostgreSQL 16 (BI), SQLite (BIRD and lightweight runs).
 - Read-only database access everywhere.
 - A per-experiment spend cap, approved by a human before Phase 6 (work item `h-approve-budget`).

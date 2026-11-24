@@ -29,11 +29,12 @@ class UIRun:
 
 
 def default_llm() -> LLMClient | None:
-    if not (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")):
+    model = load_model_settings()
+    if model.provider == "anthropic" and not (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")):
         return None
-    from agent_sql.llm.anthropic_client import AnthropicClient
+    from agent_sql.llm.factory import live_client
 
-    return AnthropicClient(interactive_fallbacks=True)
+    return live_client(model, interactive=True)
 
 
 def run_question(system_id: str, db_id: str, question: str, llm: LLMClient, as_of: str | None = "2026-01-01") -> UIRun:

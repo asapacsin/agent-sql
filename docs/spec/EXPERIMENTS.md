@@ -53,7 +53,7 @@ Mirrors `docs/spec/parameters.json`. `scripts/check_spec.py` fails if they disag
 
 | Parameter | Value |
 | --- | --- |
-| `model_id` | claude-opus-5-5 |
+| `model_id` | qwen3.7-plus-2026-05-26 |
 | `effort` | medium |
 | `max_tokens_per_call` | 16000 |
 | `statement_timeout_s` | 30 |
@@ -181,7 +181,7 @@ Reproduction levels:
 
 ## 9. Cost planning (assumption-based estimate; replaced by E0)
 
-Using `claude-opus-5-5` list prices ($4/MTok input, $20/MTok output, $0.20/MTok cache read) and **assumed** per-task usage:
+Using `qwen3.7-plus-2026-05-26` list prices ($4/MTok input, $20/MTok output, $0.20/MTok cache read) and **assumed** per-task usage:
 
 | System | Assumed usage per task | Assumed cost / task |
 | --- | --- | --- |

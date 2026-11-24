@@ -121,15 +121,16 @@ class Runner:
         self.allow_dirty = allow_dirty
         self.databases = databases or {}
         mode = "replay" if replay else cfg.llm.mode
+        self.live = llm is None and mode == "record"  # a real provider will be called
         cache_path = Path(cfg.llm.cache) if cfg.llm.cache else self.out / "llm_cache.jsonl"
         if llm is not None and mode == "record":
             self.llm: LLMClient = CachedLLM(cache_path, "record", llm)
         elif mode == "replay":
             self.llm = CachedLLM(cache_path, "replay")
         else:
-            from agent_sql.llm.anthropic_client import AnthropicClient
+            from agent_sql.llm.factory import live_client
 
-            self.llm = CachedLLM(cache_path, "record", AnthropicClient(max_retries=self.model.sdk_max_retries))
+            self.llm = CachedLLM(cache_path, "record", live_client(self.model))
         self.mode = mode
 
     def db(self, db_id: str) -> Database:
@@ -145,6 +146,9 @@ class Runner:
             raise SystemExit("refusing to run on a dirty git tree (use --allow-dirty for exploratory runs)")
         if held_out:
             self._check_frozen_snapshots()
+        if self.live and (held_out or not self.cfg.exploratory) and not self.pricing.is_priced(self.model.model_id):
+            raise SystemExit(f"model {self.model.model_id} is UNPRICED in configs/pricing.yaml; budget-capped "
+                             "experiments need confirmed rates (exploratory dev runs are allowed)")
         for ref in self.cfg.datasets:
             if ref.dataset == "bi" and ref.split in ("test", "study"):
                 from bi_dataset.verify_frozen import frozen_task_hash
@@ -237,7 +241,8 @@ class Runner:
                 with open(pred_path, "a", encoding="utf-8") as f:
                     f.write(json.dumps({"run_index": run_index, "task_id": task.task_id, "system_id": sid,
                                         "result": result.model_dump(mode="json")}, sort_keys=True) + "\n")
-                state["cost"] += result.usage.cost_usd
+                if result.usage.cost_usd == result.usage.cost_usd:  # NaN (unpriced) never counts toward the cap
+                    state["cost"] += result.usage.cost_usd
                 state["completed"] += 1
                 if state["cost"] >= self.cfg.max_experiment_usd:
                     state["stop"] = True

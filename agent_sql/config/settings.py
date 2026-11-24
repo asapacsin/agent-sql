@@ -37,6 +37,8 @@ class Strict(BaseModel):
 
 
 class ModelSettings(Strict):
+    provider: Literal["anthropic", "openai_compatible"] = "anthropic"
+    base_url: str | None = None
     model_id: str
     effort: Literal["low", "medium", "high", "xhigh", "max"]
     max_tokens_per_call: int = Field(gt=0)

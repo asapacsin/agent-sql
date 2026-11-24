@@ -77,6 +77,10 @@ def test_trace_page_renders_public_trace_only():
 
 
 def test_no_credential_message(monkeypatch):
+    import agent_sql.ui.service as svc
+
+    anthropic_cfg = svc.load_model_settings().model_copy(update={"provider": "anthropic"})
+    monkeypatch.setattr(svc, "load_model_settings", lambda: anthropic_cfg)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
     at = AppTest.from_file(APP, default_timeout=60)

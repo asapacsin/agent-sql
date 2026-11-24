@@ -8,7 +8,7 @@ All four systems, in every experiment, share:
 
 | Dimension | Value |
 | --- | --- |
-| LLM | One pinned model id per experiment (default `claude-opus-5-5`); served model verified per call; fallbacks disabled |
+| LLM | One pinned model id per experiment (default `qwen3.7-plus-2026-05-26`); served model verified per call; fallbacks disabled |
 | Inference settings | Same `effort` (default `medium`), adaptive thinking, `max_tokens=16000` per call, prompt caching on; no sampling parameters (unsupported by the API) |
 | Databases | Same database files / Postgres snapshot, same `agent_ro` permissions |
 | Questions and splits | Same frozen task manifests ([BENCHMARK.md](BENCHMARK.md) §3) |

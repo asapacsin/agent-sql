@@ -2,7 +2,7 @@
   "schema_version": 1,
   "spec_version": "0.1.0",
   "parameters": {
-    "model_id": "claude-opus-5-5",
+    "model_id": "qwen3.7-plus-2026-05-26",
     "effort": "medium",
     "max_tokens_per_call": 16000,
     "statement_timeout_s": 30,

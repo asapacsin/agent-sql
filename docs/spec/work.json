@@ -47,7 +47,7 @@
     {
       "id": "h-provide-api-key",
       "owner": "HUMAN_CREDENTIAL",
-      "status": "HUMAN_REQUIRED",
+      "status": "PASS",
       "priority": 2,
       "action": "Provide an Anthropic API credential to the execution environment (environment variable or secret store, never committed)",
       "depends_on": [],
@@ -55,7 +55,10 @@
       "automation_blocker": "Credentials must be provisioned by the account owner",
       "procedure": "Configure ANTHROPIC_API_KEY (or an equivalent SDK credential) in the runtime environment's secret settings",
       "pass_criteria": "tests/live smoke test can authenticate",
-      "expected_return": "Confirmation that the credential is configured (not the value)"
+      "expected_return": "Confirmation that the credential is configured (not the value)",
+      "evidence": [
+        "Owner directed Qwen via Alibaba Cloud Model Studio Singapore (2026-11-23, CHANGELOG A18); credential saved as an environment network secret for dashscope-intl.aliyuncs.com (value never seen)"
+      ]
     },
     {
       "id": "p1-scaffold",
@@ -733,7 +736,8 @@
           "C_E1_and_E3_only": "approx 500-1100"
         },
         "note": "Replace with E0 measured costs before deciding"
-      }
+      },
+      "notes": "Owner pre-approved setting the cap after E0 measures cost (2026-11-24); the numeric cap is still to be recorded once Qwen rates are confirmed and E0 has run"
     },
     {
       "id": "h-run-analyst-study",
@@ -792,7 +796,7 @@
     {
       "id": "h-approve-spec-amendments",
       "owner": "HUMAN_DECISION",
-      "status": "HUMAN_REQUIRED",
+      "status": "PASS",
       "priority": 5,
       "action": "Owner reviews docs/spec/CHANGELOG.md v0.1.1 amendments A1-A8 and approves or rejects each",
       "depends_on": [
@@ -810,12 +814,15 @@
           "reject all: restore v0.1.0 wording, original D3 and remove CI job"
         ],
         "cost_of_rejecting_A2": "dev instance regenerated; D3 diagnostic tasks may become unanswerable"
-      }
+      },
+      "evidence": [
+        "Owner approved amendments A1-A17 in chat on 2026-11-24 ('these are all ok'), including the A15 AGENTS.md exception for mechanical guard reads"
+      ]
     },
     {
       "id": "h-decide-test-overlap",
       "owner": "HUMAN_DECISION",
-      "status": "HUMAN_REQUIRED",
+      "status": "PASS",
       "priority": 15,
       "action": "Decide whether to keep or re-author the 7 BI test tasks that duplicate dev/val questions (CHANGELOG A12)",
       "depends_on": [
@@ -832,7 +839,10 @@
           "re-author 7 tasks and re-freeze"
         ],
         "effect": "non-overlap subset n=43 lowers BI power slightly"
-      }
+      },
+      "evidence": [
+        "Owner chose keep (2026-11-24): headline on all 50 BI test tasks plus the non-overlap subset (CHANGELOG A12)"
+      ]
     }
   ]
 }

@@ -12,7 +12,7 @@ This is a hypothesis to test, not an assumed result. A null or negative finding 
 
 ## Four comparable systems
 
-All four use the same pinned LLM (`claude-opus-5-5`), the same inference settings, databases, permissions, questions, splits, and scoring. The differences are listed explicitly in [BASELINES.md](docs/spec/BASELINES.md).
+All four use the same pinned LLM (`qwen3.7-plus-2026-05-26`), the same inference settings, databases, permissions, questions, splits, and scoring. The differences are listed explicitly in [BASELINES.md](docs/spec/BASELINES.md).
 
 | | System | What it adds |
 | --- | --- | --- |

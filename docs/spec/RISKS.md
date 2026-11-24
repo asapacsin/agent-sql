@@ -49,7 +49,7 @@ Ratings: L = likelihood, I = impact (H/M/L).
 
 ## 4. Known limitations (accepted)
 
-1. One model family in v1. Conclusions are conditional on `claude-opus-5-5`.
+1. One model family in v1. Conclusions are conditional on `qwen3.7-plus-2026-05-26`.
 2. English questions only.
 3. No real users in the benchmark; human evaluation is limited to E5/E6/E7.
 4. No production concerns (multi-tenancy, auth, SLAs).
