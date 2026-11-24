@@ -77,3 +77,21 @@ def test_replay_reproduces_a1(tmp_path, bi_dev_sqlite):
            databases={"retailco_dev": bi_dev_sqlite}).run()
     rec, rep = _preds(tmp_path / "rec" / "predictions.jsonl"), _preds(tmp_path / "rep" / "predictions.jsonl")
     assert rec == rep and all(r["result"]["answer"]["status"] == "ANSWERED" for r in rec)
+
+
+LIVE_FIXTURE = __import__("pathlib").Path(__file__).parent / "fixtures" / "b0_bi_dev"
+
+
+def test_replay_live_cassette_reproduces_recorded_predictions(tmp_path, bi_dev_sqlite):
+    """p1-live-smoke: B0 replayed from the committed LIVE cassette (5 BI-dev tasks, Qwen) reproduces the
+    predictions recorded during the live run, excluding wall-clock fields."""
+    import shutil
+
+    cache = tmp_path / "cache.jsonl"
+    shutil.copy(LIVE_FIXTURE / "cache.jsonl", cache)
+    cfg = ExperimentConfig(experiment_id="p1_live_fixture", datasets=[DatasetRef(dataset="bi", split="dev", limit=5)],
+                           systems=["b0"], runs=1, concurrency=2, max_experiment_usd=1.0, exploratory=True,
+                           llm={"mode": "replay", "cache": str(cache)})
+    Runner(cfg, replay=True, allow_dirty=True, out_dir=tmp_path / "rep",
+           databases={"retailco_dev": bi_dev_sqlite}).run()
+    assert _preds(LIVE_FIXTURE / "predictions.jsonl") == _preds(tmp_path / "rep" / "predictions.jsonl")

@@ -8,7 +8,7 @@
     "Never weaken, skip, or delete a test or gate to obtain PASS",
     "No secrets in code, configs, traces, reports, or commits",
     "Never claim performance results from dev/val runs, FakeLLM, or replay as experimental results",
-    "Live gate requires ANTHROPIC credentials from the environment; without them it is BLOCKED, not PASS"
+    "Live gate requires the configured provider credential (configs/models.yaml; Qwen key via DASHSCOPE_API_KEY or proxy-injected network secret); without them it is BLOCKED, not PASS"
   ],
   "model_policy": {
     "executor_default": "low-cost capable coding model",
