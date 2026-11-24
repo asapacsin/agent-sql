@@ -249,14 +249,15 @@
       "contract_path": "contracts/phase-1.json",
       "phase": 1,
       "evidence": [
-        "gate live-smoke-b0: pytest tests/live -m live -k b0 -> 1 passed (844 s) on 1d1f678, Qwen via Model Studio, 20/20 BI-dev tasks, no FAILED_PROVIDER",
-        "NOT_VERIFIED: replay fixture subset from this run not yet committed; independent review pending"
+        "phase-1 gates on clean commit ab9ed50: all 10 PASS incl. integration-postgres and live-smoke-b0 (796 s, Qwen, 20/20 BI-dev, traces + no-fabrication + metric summary asserted) (scripts/run_gates.py)",
+        "live cassette (5 BI-dev tasks) committed at tests/replay/fixtures/b0_bi_dev/; replay test reproduces recorded predictions",
+        "independent review round 1 on b8d375a: REWORK (missing fixture, thin live assertions, credential check) -> fixed in ab9ed50 (CHANGELOG A20); round 2 pending"
       ]
     },
     {
       "id": "p1-gate",
       "owner": "AUTONOMOUS",
-      "status": "BLOCKED_EXTERNAL",
+      "status": "NOT_RUN",
       "priority": 120,
       "action": "Run all required gates in contracts/phase-1.json on a clean commit and obtain independent review",
       "depends_on": [
@@ -274,7 +275,11 @@
       ],
       "contract_path": "contracts/phase-1.json",
       "phase": 1,
-      "blocked_by": "live gate live-smoke-b0 needs h-provide-api-key; all offline gates PASS + review PASS"
+      "evidence": [
+        "phase-1 gates on clean commit ab9ed50: all 10 PASS incl. integration-postgres and live-smoke-b0 (796 s, Qwen, 20/20 BI-dev, traces + no-fabrication + metric summary asserted) (scripts/run_gates.py)",
+        "live cassette (5 BI-dev tasks) committed at tests/replay/fixtures/b0_bi_dev/; replay test reproduces recorded predictions",
+        "independent review round 1 on b8d375a: REWORK (missing fixture, thin live assertions, credential check) -> fixed in ab9ed50 (CHANGELOG A20); round 2 pending"
+      ]
     },
     {
       "id": "p2-bird-download",
