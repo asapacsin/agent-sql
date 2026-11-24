@@ -683,7 +683,7 @@
     {
       "id": "p6-pilot",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 340,
       "action": "E0 pilot on val: measured cost and latency per system",
       "depends_on": [
@@ -693,7 +693,10 @@
         "anthropic_api"
       ],
       "contract_path": "contracts/phase-6.json",
-      "phase": 6
+      "phase": 6,
+      "evidence": [
+        "results/e0_pilot: 600/600, 0 errors; reports/e0_pilot.md (measured cost per task per system, projected plan cost)"
+      ]
     },
     {
       "id": "p6-preregister",
@@ -829,12 +832,12 @@
       "pass_criteria": "A numeric max_experiment_usd and the chosen ablation run count are recorded",
       "expected_return": "Chosen option and cap in USD",
       "quantified": {
-        "planning_estimates_usd_unmeasured": {
-          "A_full_E1_E2x3_E3": "approx 2000-4600",
-          "B_full_E1_E2x1_E3": "approx 1000-2300",
-          "C_E1_and_E3_only": "approx 500-1100"
+        "measured_projection_usd_with_1_5x_margin": {
+          "A_full_E1_E2x3_E3": "approx 178",
+          "B_full_E1_E2x1_E3": "approx 88",
+          "C_E1_and_E3_only": "approx 43"
         },
-        "note": "Replace with E0 measured costs before deciding"
+        "source": "reports/e0_pilot.md"
       },
       "notes": "Owner pre-approved setting the cap after E0 measures cost (2026-11-24); the numeric cap is still to be recorded once Qwen rates are confirmed and E0 has run"
     },
