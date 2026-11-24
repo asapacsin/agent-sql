@@ -2,7 +2,7 @@
 system_id: a1_noexplore
 kind: a1
 prompts:
-  system: a1/system.v1.md
+  system: a1/system.v2.md
 budgets:
   max_llm_calls: 12
   max_tool_calls: 15
