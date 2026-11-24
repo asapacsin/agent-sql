@@ -6,4 +6,4 @@ runs: 1
 bi_engine: postgres
 llm: {mode: record, cache: results/llm_cache_val.jsonl}  # R6/R7: reuse val calibration requests; only B1-SC is new
 concurrency: 4
-max_experiment_usd: 200.0
+max_experiment_usd: 20.0  # R8: expected ~$1.6 new (B1-SC 120 x ~$0.013); B0-A2 served from val cache
