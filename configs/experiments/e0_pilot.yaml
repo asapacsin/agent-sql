@@ -4,6 +4,6 @@ datasets: [{dataset: bird, split: val}, {dataset: bi, split: val}]
 systems: [b0, b1, a1, a2, b1_sc]
 runs: 1
 bi_engine: postgres
-llm: {mode: record}
+llm: {mode: record, cache: results/llm_cache_val.jsonl}  # R6/R7: reuse val calibration requests; only B1-SC is new
 concurrency: 4
 max_experiment_usd: 200.0
