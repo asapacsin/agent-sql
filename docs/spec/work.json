@@ -251,13 +251,13 @@
       "evidence": [
         "phase-1 gates on clean commit ab9ed50: all 10 PASS incl. integration-postgres and live-smoke-b0 (796 s, Qwen, 20/20 BI-dev, traces + no-fabrication + metric summary asserted) (scripts/run_gates.py)",
         "live cassette (5 BI-dev tasks) committed at tests/replay/fixtures/b0_bi_dev/; replay test reproduces recorded predictions",
-        "independent review round 1 on b8d375a: REWORK (missing fixture, thin live assertions, credential check) -> fixed in ab9ed50 (CHANGELOG A20); round 2 pending"
+        "independent review (separate reviewer, read-only): round 1 REWORK on b8d375a; round 2 PASS on ab9ed50 (minor non-blocking: fixture has no non-ANSWERED task; metric check shallow; adapter placeholder bearer)"
       ]
     },
     {
       "id": "p1-gate",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 120,
       "action": "Run all required gates in contracts/phase-1.json on a clean commit and obtain independent review",
       "depends_on": [
@@ -278,7 +278,7 @@
       "evidence": [
         "phase-1 gates on clean commit ab9ed50: all 10 PASS incl. integration-postgres and live-smoke-b0 (796 s, Qwen, 20/20 BI-dev, traces + no-fabrication + metric summary asserted) (scripts/run_gates.py)",
         "live cassette (5 BI-dev tasks) committed at tests/replay/fixtures/b0_bi_dev/; replay test reproduces recorded predictions",
-        "independent review round 1 on b8d375a: REWORK (missing fixture, thin live assertions, credential check) -> fixed in ab9ed50 (CHANGELOG A20); round 2 pending"
+        "independent review (separate reviewer, read-only): round 1 REWORK on b8d375a; round 2 PASS on ab9ed50 (minor non-blocking: fixture has no non-ANSWERED task; metric check shallow; adapter placeholder bearer)"
       ]
     },
     {
