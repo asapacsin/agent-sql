@@ -3,14 +3,16 @@
 version: "2026-11-24"
 models:
   qwen3.7-plus-2026-05-26:
-    # Alibaba Cloud Model Studio (Singapore). NOT YET CONFIRMED: the official price page could not be fetched from
-    # this environment. Fill from https://www.alibabacloud.com/help/en/model-studio/model-pricing (record the date).
-    source_url: null
-    retrieved_at: null
-    input: null
-    output: null
-    cache_read: null
-    cache_write: null
+    # Alibaba Cloud Model Studio, International (Singapore), snapshot row "qwen3.7-plus-2026-05-26", tier
+    # 0<Token<=256K input per request (all benchmark calls are far below 256K). Thinking and non-thinking output are
+    # the same price. The page says "context cache enjoys a discount" without a rate on this table, so cached input
+    # is charged at the full input rate (a conservative upper bound for budget caps).
+    source_url: https://www.alibabacloud.com/help/en/model-studio/model-pricing
+    retrieved_at: "2026-11-24"
+    input: 0.40
+    output: 1.60
+    cache_read: 0.40    # upper bound; actual cache discount not stated in the table
+    cache_write: 0.40   # upper bound
   claude-opus-5-5:
     source_url: https://platform.claude.com/docs/en/about-claude/pricing
     retrieved_at: "2026-11-03"
