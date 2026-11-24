@@ -383,7 +383,7 @@
     {
       "id": "p2-val-baselines",
       "owner": "AUTONOMOUS",
-      "status": "BLOCKED_EXTERNAL",
+      "status": "PASS",
       "priority": 190,
       "action": "Live B0/B1 calibration runs on val (dev-only report)",
       "depends_on": [
@@ -397,12 +397,15 @@
       ],
       "contract_path": "contracts/phase-2.json",
       "phase": 2,
-      "blocked_by": "h-provide-api-key: no Anthropic credential in the execution environment"
+      "evidence": [
+        "val calibration run results/val_calibration_v2 on commit 2a12004 (480 predictions, 0 runner errors); dev-only report reports/dev/val_calibration.md: B0 M03 0.74 BIRD-val / 0.75 BI-val; B1 0.76 / 0.65",
+        "dev-only; not a reported result"
+      ]
     },
     {
       "id": "p2-gate",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 200,
       "action": "Run all required gates in contracts/phase-2.json on a clean commit and obtain independent review",
       "depends_on": [
@@ -415,7 +418,12 @@
         "p2-val-baselines"
       ],
       "contract_path": "contracts/phase-2.json",
-      "phase": 2
+      "phase": 2,
+      "evidence": [
+        "phase-2 gates on clean commit 2a12004: all 12 PASS incl. bird-parity 0 disagreements over 350 tasks",
+        "independent review (separate reviewer, read-only) on 2a12004: phase 2 PASS",
+        "p2-val-baselines PASS (dev-only report)"
+      ]
     },
     {
       "id": "p3-tools",
@@ -485,7 +493,7 @@
     {
       "id": "p3-a1-val",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 250,
       "action": "Live A1 calibration on val; budget-hit rates",
       "depends_on": [
@@ -496,12 +504,16 @@
         "anthropic_api"
       ],
       "contract_path": "contracts/phase-3.json",
-      "phase": 3
+      "phase": 3,
+      "evidence": [
+        "val calibration run results/val_calibration_v2 on commit 2a12004 (480 predictions, 0 runner errors); dev-only report reports/dev/val_calibration.md: A1 M03 0.44 BIRD-val / 0.60 BI-val; tool-budget hits 1/120; median 17,789 tokens/task",
+        "finding: extra final-query columns depress strict BIRD EX; escalated as h-decide-final-query"
+      ]
     },
     {
       "id": "p3-gate",
       "owner": "AUTONOMOUS",
-      "status": "NOT_RUN",
+      "status": "PASS",
       "priority": 260,
       "action": "Run all required gates in contracts/phase-3.json on a clean commit and obtain independent review",
       "depends_on": [
@@ -512,7 +524,12 @@
         "p3-a1-val"
       ],
       "contract_path": "contracts/phase-3.json",
-      "phase": 3
+      "phase": 3,
+      "evidence": [
+        "phase-3 gates on clean commit 2a12004: all PASS",
+        "independent review (separate reviewer, read-only) on 2a12004: phase 3 PASS",
+        "p3-a1-val PASS (dev-only report)"
+      ]
     },
     {
       "id": "p4-verification",
@@ -563,6 +580,30 @@
       ]
     },
     {
+      "id": "h-decide-final-query",
+      "owner": "HUMAN_DECISION",
+      "status": "HUMAN_REQUIRED",
+      "priority": 295,
+      "phase": 4,
+      "action": "Decide how the A1/A2 final query is scored when agents add supporting columns that strict BIRD EX rejects",
+      "depends_on": [
+        "p3-a1-val"
+      ],
+      "automation_blocker": "Changes the agent protocol or the reported scoring; affects H1/H3 and is an owner decision about benchmark design",
+      "procedure": "Read reports/dev/val_calibration.md finding 1; choose an option",
+      "pass_criteria": "Owner choice recorded (comment or commit)",
+      "expected_return": "One of the options",
+      "quantified": {
+        "options": [
+          "separate answer_query_id in submit_answer (scored by EX; claims may cite any query)",
+          "one more prompt version (attempt 2 of 3)",
+          "keep as is and report the effect as a limitation"
+        ],
+        "evidence": "BIRD-val M03 A1 0.44, A2 0.49 vs B0 0.74 (prompts v2); v1 0.30/0.34",
+        "cost_of_delay": "p4-a2-val, E0 pilot and all Phase 6 runs wait"
+      }
+    },
+    {
       "id": "p4-a2-val",
       "owner": "AUTONOMOUS",
       "status": "NOT_RUN",
@@ -570,7 +611,8 @@
       "action": "Live A2 calibration on val; choose B1-SC n",
       "depends_on": [
         "p4-ablations",
-        "h-provide-api-key"
+        "h-provide-api-key",
+        "h-decide-final-query"
       ],
       "requires": [
         "anthropic_api"
