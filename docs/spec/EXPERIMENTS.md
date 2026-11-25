@@ -228,7 +228,7 @@ Cost per 1M tokens at list price, with no cache discount, ≈ 0.93 × $0.40 + 0.
 - **R8 Spend caps.** Every live experiment config sets `max_experiment_usd`; the runner stops at the cap. Before a run, the expected cost (§9.1 means × task-runs) is written in the run's config comment; a run whose expected cost exceeds the remaining approved budget does not start.
 - **R9 Report cost honestly.** Reports give tokens, cache-hit share and cost per task and per success from the trace usage; waste from incidents is reported, not hidden.
 
-### 9.4 Owner decisions on scope (proposed, not yet approved)
+### 9.4 Owner decisions on scope (decided 2026-11-24: option B — E1 × 3 runs, E2 × 1 run, E3; cap $90; CHANGELOG A28)
 
 | Option | Saves | Effect |
 | --- | --- | --- |
