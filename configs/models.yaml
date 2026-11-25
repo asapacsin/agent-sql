@@ -1,4 +1,4 @@
-# Pinned model for all systems in an experiment (docs/spec/BASELINES.md section 1; owner choice 2026-11-23:
+# Pinned model for all systems in an experiment (docs/spec/BASELINES.md section 1). The former pin (qwen3.7-plus-2026-05-26) was chosen by the AI assistant, not the owner (CHANGELOG A30):
 # Qwen via Alibaba Cloud Model Studio, Singapore). A dated snapshot is pinned for reproducibility.
 provider: openai_compatible
 base_url: https://dashscope-intl.aliyuncs.com/compatible-mode/v1
