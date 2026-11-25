@@ -2,7 +2,7 @@
 # Qwen via Alibaba Cloud Model Studio, Singapore). A dated snapshot is pinned for reproducibility.
 provider: openai_compatible
 base_url: https://dashscope-intl.aliyuncs.com/compatible-mode/v1
-model_id: qwen3.7-plus-2026-05-26
+model_id: UNSET   # owner instruction 2026-11-25: do not use qwen3.7-plus-2026-05-26; the owner sets the next model
 effort: medium   # not sent to this provider; kept for provider-neutral configs
 max_tokens_per_call: 16000
 benchmark_mode: true

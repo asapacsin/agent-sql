@@ -2,7 +2,21 @@ from __future__ import annotations
 
 import pytest
 
+import agent_sql.config.settings as _settings
 from agent_sql.safety.policy import AccessPolicy
+
+# Offline tests never depend on the owner's live model choice (configs/models.yaml may be UNSET, AGENTS.md D14):
+# they run FakeLLM/replay offline, named as the model the replay fixtures were recorded with (no API call is made;
+# live_client refuses live calls). Patched before test modules import the loader.
+_load_model = _settings.load_model_settings
+
+
+def _test_model_settings(root=_settings.REPO_ROOT):
+    m = _load_model(root)
+    return m if m.model_id != "UNSET" else m.model_copy(update={"model_id": "qwen3.7-plus-2026-05-26"})
+
+
+_settings.load_model_settings = _test_model_settings
 
 BI_TABLES = {
     "orders": {"order_id": "INT", "customer_id": "INT", "order_date": "DATE", "status": "TEXT",

@@ -59,6 +59,8 @@ These rules cover the tokens a contributor (human with an AI assistant, or a cod
 - **D12 Short, linked documents.** Spec documents state a rule once and link to it elsewhere; no duplicated tables between documents. Record changes as one CHANGELOG row, not by rewriting history in other sections.
 - **D13 Small modules with one owner.** Keep modules focused (Workflow step 2) so a task needs few files in context.
 
+- **D14 No live model call without the owner's explicit approval for that run.** Live calls spend the owner's money. Code refuses them unless `configs/models.yaml` names a model the owner set and `AGENT_SQL_ALLOW_LIVE=1` is set by the owner for that run. A general instruction ("finish the work") is not approval to spend. `qwen3.7-plus-2026-05-26` must not be used (owner instruction 2026-11-25).
+
 **Reporting.** A session that ends a work item states what it verified and what it did not (Evidence discipline). Token use is not a gate, but a session that hit D11 or needed more than one context window records why in the frontier item's notes.
 
 ## Gate entry points
